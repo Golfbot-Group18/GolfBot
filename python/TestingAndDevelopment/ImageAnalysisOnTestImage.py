@@ -48,6 +48,7 @@ else:
     # Find contours in the thresholded image for the egg
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+    """""
     # Iterate through detected contours for the egg
     for contour in contours:
         # Calculate the area of the contour
@@ -65,6 +66,9 @@ else:
                 cY = int(M["m01"] / M["m00"])
                 label_position = (cX - 10, cY - 10)
                 cv2.putText(img, "egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+"""""
+
+
 
     # Display the image with detected circles and contours
     cv2.imshow('Objects Detected', img)
