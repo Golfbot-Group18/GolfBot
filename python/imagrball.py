@@ -1,10 +1,9 @@
-
+import os
 import cv2
 import numpy as np
 
 # Provide the correct full path to the image file
-image_path = '/Users/hallahalhag/Documents/GitHub/GolfBot.Group18/python/app/datasets/imags/test1.jpg'
-
+image_path = os.path.join(os.getcwd(), 'images', 'test1.jpg')
 # Load the image
 img = cv2.imread(image_path)
 
@@ -77,7 +76,7 @@ import cv2
 import numpy as np
 
 # Provide the correct full path to the image file
-image_path = '/Users/hallahalhag/Documents/GitHub/GolfBot.Group18/python/app/datasets/imags/test1.jpg'
+image_path = '/Users/hallahalhag/Documents/GitHub/GolfBot.Group18/python/app/datasets/images/test1.jpg'
 
 # Load the image
 img = cv2.imread(image_path)
