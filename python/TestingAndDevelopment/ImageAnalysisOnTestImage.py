@@ -16,6 +16,8 @@ else:
 
     # Apply GaussianBlur to reduce noise and help the circle detection
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    cv2.imshow('Gaussian Blur', blurred)
+    cv2.waitKey(0)
 
     # Use Hough Circle Transform to detect circles for the ball
     circles = cv2.HoughCircles(

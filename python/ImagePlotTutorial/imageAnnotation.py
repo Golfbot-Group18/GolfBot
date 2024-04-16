@@ -2,7 +2,7 @@
 import cv2
 
 # let's read the image using imread() function from OpenCV
-img = cv2.imread('../images/other/sample.jpg')
+img = cv2.imread('../TestingAndDevelopment/images/other/sample.jpg')
 #let's see the sample image
 cv2.imshow('Original Image',img)
 cv2.waitKey(0)
