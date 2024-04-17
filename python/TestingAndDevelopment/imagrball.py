@@ -42,21 +42,19 @@ def detect_eggs(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
 
+    # Threshold the image to obtain binary image
+    _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
     # Find contours in the grayscale image
     contours, _ = cv2.findContours(blurred, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Iterate through detected contours
     for contour in contours:
-        # Approximate the contour to a polygon
-        approx = cv2.approxPolyDP(contour, 0.01 * cv2.arcLength(contour, True), True)
-
-        # If the contour has a reasonable area (adjust threshold as needed)
-        if cv2.contourArea(contour) > 1000:
-            # Draw the contour on the image
-            cv2.drawContours(image, [approx], 0, (0, 255, 0), 2)
+        if len(contour) >=5:
+            ellipsis=cv2.fitEllipse(contour)
+            cv2.ellipse(image,ellipsis,(255,0,0),2)
 
             # Label the contour as "egg"
-            label_position = (approx[0][0][0], approx[0][0][1])
+            label_position = (int (ellipsis[0][0]), int(ellipsis[0][1]))
             cv2.putText(image, "egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     return image
@@ -68,6 +66,9 @@ if img is None:
 else:
     # Detect red areas in the image
     img_with_red = detect_red(img)
+
+    # Detect eggs in the image
+    img_with_eggs = detect_eggs(img.copy())
 
     # Convert the image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -99,7 +100,7 @@ else:
             cv2.putText(img_with_red, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # Display the image with circles and detected red areas
-    cv2.imshow('Objects Detected', img_with_red)
+    cv2.imshow('Objects Detected', np.hstack((img_with_red, img_with_eggs)))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
