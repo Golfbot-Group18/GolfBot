@@ -15,6 +15,10 @@ import socket
 # Click "Open user guide" on the EV3 extension tab for more information.
 
 
+#listOfDevices = bluetooth
+
+
+
 # Create your objects here.
 ev3 = EV3Brick()
 
@@ -25,9 +29,25 @@ ev3.speaker.beep()
 # initilize motor
 feed = Motor(Port.C)
 
-feed.run(-40000)
+#feed.run(40000)
 
-time.sleep(600)
+#time.sleep(600)
+'''
+color_Sensor = ColorSensor(Port.S2)
+
+
+while(1):
+    color = color_Sensor.color()
+
+    print(color_Sensor.reflection())
+
+'''
+
+ultra_Sensor = UltrasonicSensor(Port.S1)
+
+
+while(1):
+    print(ultra_Sensor.distance())
 
 ev3.speaker.beep()
 
