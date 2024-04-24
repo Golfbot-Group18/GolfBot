@@ -38,6 +38,18 @@ leftMotor = Motor(Port.A)
 feed = Motor(Port.C)
 
 
+# Setting up drivebase and configuring it to low speeds
+driveBase = DriveBase(leftMotor, rightMotor,75 ,185)
+driveBase.settings(30,30,30,30)
+
+
+
+
+
+
+
+
+
 feed.run(40000)
 '''
 # setting up drivebase
