@@ -11,9 +11,13 @@ from pybricks.media.ev3dev import SoundFile, ImageFile
 import time
 import socket
 
+import drive
+
+
 # This program requires LEGO EV3 MicroPython v2.0 or higher.
 # Click "Open user guide" on the EV3 extension tab for more information.
 
+driveFunc = drive.Drive
 
 #listOfDevices = bluetooth
 
@@ -27,6 +31,8 @@ ev3 = EV3Brick()
 ev3.speaker.beep()
 
 # initilize motor
+rightMotor = Motor(Port.B)
+leftMotor = Motor(Port.A)
 feed = Motor(Port.C)
 
 #feed.run(40000)
@@ -43,13 +49,16 @@ while(1):
 
 '''
 
-ultra_Sensor = UltrasonicSensor(Port.S1)
+#ultra_Sensor = UltrasonicSensor(Port.S1)
 
 
-while(1):
-    print(ultra_Sensor.distance())
+#while(1):
+#    print(ultra_Sensor.distance())
+
+
+#driveFunc.singleMotor(ev3,feed,4)
+driveFunc.bothMotors(ev3, rightMotor, leftMotor, 4)
+
 
 ev3.speaker.beep()
 
-
-# https://www.youtube.com/watch?v=8pMaR-WUc6U&t=605s&ab_channel=NeuralNine
