@@ -44,8 +44,8 @@ if img is None:
 else:
     # Detect red areas in the image
     course = detect_red(img)
-    cv2.namedWindow('Objects Detected', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Objects Detected', 720, 1280)
-    cv2.imshow('Objects Detected', course)
+    cv2.namedWindow('Course Detected', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Course Detected', 720, 1280)
+    cv2.imshow('Course Detected', course)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
