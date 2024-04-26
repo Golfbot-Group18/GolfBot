@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,9 +23,9 @@ def detect_red(image):
     # Threshold the HSV image to get only red colors
     mask = cv2.inRange(hsv, lower_red, upper_red)
 
-    # Apply morphological operations to remove noise
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
+   # Apply morphological operations to remove noise
+   # mask = cv2.erode(mask, None, iterations=2)
+   # mask = cv2.dilate(mask, None, iterations=2)
 
     # Find contours in the mask
     contours, _ = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
