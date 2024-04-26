@@ -1,10 +1,10 @@
 import os
 import cv2
 import numpy as np
-# Get the current directory where your script is located
+# Få den aktuelle mappe, hvor dit script er placeret.
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Provide the correct full path to the image file
+# Giver den korrekte fulde path til billede filer
 image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Robot_from.jpg')
 img = cv2.imread(image_path)
 
@@ -12,16 +12,18 @@ img = cv2.imread(image_path)
 if img is None:
     print(f"Error: Unable to load the image from '{image_path}'.")
 else:
-    # Convert to HSV color space
+    # Convert from BGR to HSV color space
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Define red color ranges
+    # Define red color ranges in HSV
     lower_red = np.array([0, 20, 50])
     upper_red = np.array([5, 255, 255])
+    # mask0 is for lighter red
     mask0 = cv2.inRange(img_hsv, lower_red, upper_red)
 
     lower_red = np.array([170, 20, 20])
     upper_red = np.array([180, 255, 255])
+    # mask1 is for drakere red
     mask1 = cv2.inRange(img_hsv, lower_red, upper_red)
 
     # Combine masks
