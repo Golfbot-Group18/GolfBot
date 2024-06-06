@@ -1,9 +1,7 @@
 import os
 import cv2
-import numpy as np
 
-from src.Components.Course_David import Course_Detection
-from src.Components.RobotDetection import RobotDetection
+from src.Components.TemporaryScripts.Course_David import Course_Detection
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte stig til billede filerne
 script_dir = os.path.dirname(os.path.abspath(__file__))
