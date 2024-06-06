@@ -35,6 +35,8 @@ else:
 
             label_position = (circle[0] - 10, circle[1] - 10)
             cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            x, y, radius = circle
+            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
     # If eggs are found, draw them on the image
     if egg is not None:
