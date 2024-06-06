@@ -59,9 +59,15 @@ else:
     path_img = define_inner_frame(red_mask, img)
     draw_coordinate_system(path_img, interval=100, color_x=(255, 0, 0), color_y=(0, 255, 0))
 
+    # Konverter fra BGR til HSV farverummet
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # Konverter HSV-billede til binært billede
+    binary_image = convert_to_binary(hsv)
+
     # Vis det færdige resultat
     cv2.namedWindow('Course Detected', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Course Detected', 720, 1280)
     cv2.imshow('Course Detected', path_img)
+    cv2.imshow('Binary Image', binary_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
