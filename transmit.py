@@ -11,15 +11,22 @@ from pybricks.media.ev3dev import SoundFile, ImageFile
 import time
 import socket
 
+# This program requires LEGO EV3 MicroPython v2.0 or higher.
+# Click "Open user guide" on the EV3 extension tab for more information.
+
 # our own class for simple drive to motors
 import drive
 
 
-# This program requires LEGO EV3 MicroPython v2.0 or higher.
-# Click "Open user guide" on the EV3 extension tab for more information.
-
 # setting up the class of functions that drives motors
 driveFunc = drive.Drive
+
+# The commands for the drive function are the following: 
+
+# Directions
+# in = 1
+# out = 
+
 
 
 # Creating the Ev3 brick
@@ -40,17 +47,30 @@ feed = Motor(Port.C)
 
 # Setting up drivebase and configuring it to low speeds
 driveBase = DriveBase(leftMotor, rightMotor,75 ,185)
-driveBase.settings(30,30,30,30)
+#driveBase.settings(30,30,30,30)
+driveBase.turn(90)
+#driveFunc.bothMotors(leftMotor=leftMotor, rightMotor=rightMotor, ev3=ev3, direction = 1)
+#time.sleep(3)
+#driveFunc.stopBothMotors(leftMotor=leftMotor,rightMotor=rightMotor,ev3=ev3)
 
 
 
 
 
+#Running the feedmotor
+#driveFunc.feedMotor(ev3,feed, 1)
+#time.sleep(15)
+#driveFunc.stopMotor(ev3=ev3,motor=feed)
 
 
 
+#driveFunc.singleMotor(ev3,leftMotor,1)
+#driveFunc.singleMotor(ev3,rightMotor,0)
+#time.sleep(5)
+#driveFunc.stopBothMotors(ev3,leftMotor,rightMotor)
 
-feed.run(40000)
+
+#feed.run(-40000)
 '''
 # setting up drivebase
 driveBase = DriveBase(leftMotor, rightMotor,75 ,185)
