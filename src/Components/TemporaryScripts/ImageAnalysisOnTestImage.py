@@ -23,9 +23,14 @@ if frame is None:
 else:
     balls = DetectBall(frame)
     egg = DetectEgg(frame)
-    x, y, w, h = DetectRobot(frame)
+    robot_contour = DetectRobot(frame)
     # Draw the bounding rectangle on the original image
-    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
+    if robot_contour is not None:
+        cv2.drawContours(frame, [robot_contour], -1, (0, 255, 0), 2)
+        for contour in robot_contour:
+            for point in contour:
+                x, y = point
+                print(f"Green point: ({x}, {y})")
 
     # If balls are found, draw them on the image
     if balls is not None:
