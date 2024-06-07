@@ -1,15 +1,10 @@
-import os
 import cv2
 import numpy as np
 
-def RobotDetection(img):
-    # Check if the image is loaded successfully
-    if img is None:
-        print(f"Error: Unable to load the image.")
-    else:
+def DetectRobot(frame):
 
         # Konverter fra BGR til HSV farverummet
-        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         lower_green = np.array([35, 50, 50])
         upper_green = np.array([85, 255, 255])
@@ -24,11 +19,15 @@ def RobotDetection(img):
         # Filter contours by area (you can adjust the threshold)
         filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
 
-        # Get the largest contour
-        largest_contour = max(filtered_contours, key=cv2.contourArea)
+        if filtered_contours:
+                # Get the largest contour
+                largest_contour = max(filtered_contours, key=cv2.contourArea)
 
-        x, y, w, h = cv2.boundingRect(largest_contour)
-        return x, y, w, h
+                #x, y, w, h = cv2.boundingRect(largest_contour)
+                return largest_contour
+        else:
+                print("No green area found in the image.")
+                return None
 
 """""
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte stig til billede filerne

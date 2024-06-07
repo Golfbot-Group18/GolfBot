@@ -4,6 +4,7 @@ import numpy as np
 
 from src.Components.BallDetection import DetectBall
 from src.Components.EggDetection import DetectEgg
+from src.Components.RobotDetection import DetectRobot
 
 #just a change to test git
 # Get the current directory where your script is located
@@ -22,6 +23,9 @@ if frame is None:
 else:
     balls = DetectBall(frame)
     egg = DetectEgg(frame)
+    x, y, w, h = DetectRobot(frame)
+    # Draw the bounding rectangle on the original image
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
 
     # If balls are found, draw them on the image
     if balls is not None:
