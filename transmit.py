@@ -46,9 +46,9 @@ feed = Motor(Port.C)
 
 
 # Setting up drivebase and configuring it to low speeds
-driveBase = DriveBase(leftMotor, rightMotor,75 ,185)
+#driveBase = DriveBase(leftMotor, rightMotor,75 ,185)
 #driveBase.settings(30,30,30,30)
-driveBase.turn(90)
+
 #driveFunc.bothMotors(leftMotor=leftMotor, rightMotor=rightMotor, ev3=ev3, direction = 1)
 #time.sleep(3)
 #driveFunc.stopBothMotors(leftMotor=leftMotor,rightMotor=rightMotor,ev3=ev3)
@@ -64,10 +64,10 @@ driveBase.turn(90)
 
 
 
-#driveFunc.singleMotor(ev3,leftMotor,1)
-#driveFunc.singleMotor(ev3,rightMotor,0)
-#time.sleep(5)
-#driveFunc.stopBothMotors(ev3,leftMotor,rightMotor)
+driveFunc.singleMotor(ev3,leftMotor,1)
+driveFunc.singleMotor(ev3,rightMotor,0)
+time.sleep(3)
+driveFunc.stopBothMotors(ev3,leftMotor,rightMotor)
 
 
 #feed.run(-40000)
