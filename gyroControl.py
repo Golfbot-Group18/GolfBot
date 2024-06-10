@@ -18,11 +18,10 @@ class GyroController:
     
     def get_turn_direction(self, target_angle):
         current_angle = self.get_angle()
-        if target_angle > current_angle:
-            return 1  # Turn right
-        else:
-            return -1  # Turn left
+        angle_diff = (target_angle - current_angle + 180) % 360 - 180
+        return -1 if angle_diff > 0 else 1
     
     def angle_difference(self, target_angle):
-        return target_angle - self.get_angle()
+        current_angle = self.get_angle()
+        return (target_angle - current_angle + 180) % 360 - 180
         

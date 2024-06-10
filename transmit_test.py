@@ -18,7 +18,7 @@ ev3.speaker.beep()
 
 
 #driveFunc.run(-100, 3)
-driveFunc.turn_to_angle(90, 200)
+driveFunc.turn_to_angle(-90, 200)
 #driveFunc.run(100, 3)
 #driveFunc.turn_to_angle(0, 50)
 
