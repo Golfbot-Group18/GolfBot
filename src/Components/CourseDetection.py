@@ -4,7 +4,7 @@ import numpy as np
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 script_dir = os.path.dirname(os.path.abspath(__file__))
-image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Robot_green2.jpg')
+image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
 img = cv2.imread(image_path)
 
 def detect_color(img, color_range):
@@ -45,6 +45,39 @@ def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 2
         cv2.line(img, (0, y), (width, y), color_y, 1)
         cv2.putText(img, str(y), (width // 2, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_y, 1)
 
+def generate_grid(binary_image, interval):
+    height, width = binary_image.shape
+    print(f"Height: {height}, Width: {width}")
+    grid = []
+    for y in range(0, height):
+        row = []
+        for x in range(0, width):
+            cell = binary_image[y:y+interval, x:x+interval]
+            if np.any(cell == 255):
+                row.append(1)
+            else:
+                row.append(0)
+        grid.append(row)
+    return grid
+
+def visualize_grid(grid, interval=100):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255 # Hvid baggrund
+
+    for y in range(grid_height):
+        for x in range(grid_width):
+            color = (0, 0, 0) if grid[y][x] == 1 else (255, 255, 255)  # Sort celle hvis 1, ellers hvid celle
+            cv2.rectangle(vis_img, (x * interval, y * interval), ((x + 1) * interval, (y + 1) * interval), color, -1)
+
+    # Draw grid lines
+    for x in range(0, grid_width * interval, interval):
+        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
+    for y in range(0, grid_height * interval, interval):
+        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
+
+    return vis_img
+
 # Verifikation af at billede læses korrekt
 if img is None:
     print(f"Fejl: Kan ikke indlæse billedet fra '{image_path}'.")
@@ -57,12 +90,20 @@ else:
 
     # Anvend define_inner_frame og draw_coordinate_system
     path_img = define_inner_frame(red_mask, img)
-    draw_coordinate_system(path_img, interval=100, color_x=(255, 0, 0), color_y=(0, 255, 0))
+    ##draw_coordinate_system(path_img, interval=100, color_x=(255, 0, 0), color_y=(0, 255, 0))
 
     # Konverter fra BGR til HSV farverummet
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     # Konverter HSV-billede til binært billede
     binary_image = convert_to_binary(hsv)
+
+    # Generer gitter af 0'er og 1'ere
+    grid = generate_grid(binary_image, interval=1)
+    for row in grid:
+        print(row)
+    
+    grid_image = visualize_grid(grid, interval=10)
+    cv2.imshow('Grid Visualization', grid_image)
 
     # Vis det færdige resultat
     cv2.namedWindow('Course Detected', cv2.WINDOW_NORMAL)
