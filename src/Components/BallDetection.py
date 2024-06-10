@@ -71,8 +71,8 @@ def DetectBall(frame):
         minDist=20,
         param1=50,
         param2=0.9,
-        minRadius=2,
-        maxRadius=15
+        minRadius=10,
+        maxRadius=20
     )
     if circles is not None:
         return circles
