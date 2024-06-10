@@ -97,7 +97,7 @@ def bitchImagePlease():
                 cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
                 label_position = (circle[0] - 10, circle[1] - 10)
-                cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         # If eggs are found, draw them on the image
         if egg is not None:
@@ -110,7 +110,7 @@ def bitchImagePlease():
                 cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
                 label_position = (circle[0] - 10, circle[1] - 10)
-                cv2.putText(frame, "Egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                cv2.putText(frame, "Egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         # Display the frame with circles and labels
         cv2.imshow('Objects Detected', frame)
