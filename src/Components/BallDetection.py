@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-
+'''
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -55,7 +55,7 @@ else:
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
+'''
 def DetectBall(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -71,8 +71,8 @@ def DetectBall(frame):
         minDist=20,
         param1=50,
         param2=0.9,
-        minRadius=2,
-        maxRadius=15
+        minRadius=10,
+        maxRadius=20
     )
     if circles is not None:
         return circles
