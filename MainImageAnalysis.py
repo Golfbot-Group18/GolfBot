@@ -3,7 +3,7 @@ import numpy as np
 from src.Components.BallDetection import DetectBall
 from src.Components.EggDetection import DetectEgg
 from src.Components.RobotDetection import DetectRobot
-
+'''
 # Open a connection to the camera (0 is usually the default camera)
 cap = cv2.VideoCapture(0)
 
@@ -63,7 +63,7 @@ while True:
 # Release the camera and close all windows
 cap.release()
 cv2.destroyAllWindows()
-
+'''
 def bitchImagePlease():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
