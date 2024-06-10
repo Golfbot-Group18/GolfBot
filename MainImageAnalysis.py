@@ -9,6 +9,12 @@ def infiniteCapture():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
 
+    #For windows
+    #cap = cv2.VideoCapture(1)
+    #cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+    #cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    
     while True:
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -56,7 +62,12 @@ def infiniteCapture():
                     cv2.putText(frame, "Egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
             # Display the frame with circles and labels
-            cv2.imshow('Objects Detected', frame)
+            
+
+            #Also for windows
+            #cv2.namedWindow('Objects Detected', cv2.WINDOW_NORMAL)
+            #cv2.resizeWindow('Objects Detected', 1280, 720)
+            #cv2.imshow('Objects Detected', frame)
 
             # Break the loop if 'q' key is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
