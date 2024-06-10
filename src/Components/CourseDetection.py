@@ -21,6 +21,13 @@ def convert_to_binary(img, threshold_value=128):
     _, binary_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
     return binary_image
 
+def course_coordinates(binary_image):
+    white_coordinates = np.argwhere(binary_image == 255)
+
+    # Print the coordinates
+    for coord in white_coordinates:
+        print(f"White pixel at (x, y): ({coord[1]}, {coord[0]})")
+
 def define_inner_frame(mask, img):
     # Finder kanterne på objekter i en mask og tegner om dem
     x_min, x_max, y_min, y_max = 0, 1800, 0, 1200
@@ -63,6 +70,8 @@ else:
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     # Konverter HSV-billede til binært billede
     binary_image = convert_to_binary(hsv)
+
+    course_coordinates(binary_image)
 
     # Vis det færdige resultat
     cv2.namedWindow('Course Detected', cv2.WINDOW_NORMAL)
