@@ -3,9 +3,14 @@ import cv2
 import numpy as np
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
-script_dir = os.path.dirname(os.path.abspath(__file__))
-image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
-img = cv2.imread(image_path)
+#script_dir = os.path.dirname(os.path.abspath(__file__))
+#image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
+#img = cv2.imread(image_path)
+
+def giveMeBinaryBitch(img):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    return convert_to_binary(hsv)
+
 
 def detect_color(img, color_range):
     mask = cv2.inRange(img, color_range[0], color_range[1])
@@ -67,7 +72,7 @@ def generate_grid(binary_image, interval):
         grid.append(row)
     return grid
 
-def visualize_grid(grid, interval=100):
+def visualize_grid(grid, interval):
     grid_height = len(grid)
     grid_width = len(grid[0])
     vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255 # Hvid baggrund
@@ -77,7 +82,6 @@ def visualize_grid(grid, interval=100):
             color = (0, 0, 0) if grid[y][x] == 1 else (255, 255, 255)  # Sort celle hvis 1, ellers hvid celle
             cv2.rectangle(vis_img, (x * interval, y * interval), ((x + 1) * interval, (y + 1) * interval), color, -1)
 
-    # Draw grid lines
     for x in range(0, grid_width * interval, interval):
         cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
     for y in range(0, grid_height * interval, interval):
@@ -85,6 +89,27 @@ def visualize_grid(grid, interval=100):
 
     return vis_img
 
+def visualize_grid_with_path(grid, interval=10, path=[]):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255
+
+    for y in range(grid_height):
+        for x in range(grid_width):
+            if grid[y][x] == 1: 
+                vis_img[y * interval:(y + 1) * interval, x * interval:(x + 1) * interval] = (0, 0, 0)
+
+    for (y, x) in path:
+        cv2.circle(
+            vis_img, (x * interval + interval // 2, y * interval + interval // 2), interval*10, (0, 0, 0), 1)
+    
+    for x in range(0, grid_width * interval, interval):
+        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
+    for y in range(0, grid_height * interval, interval):
+        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
+
+    return vis_img
+'''
 # Verifikation af at billede læses korrekt
 if img is None:
     print(f"Fejl: Kan ikke indlæse billedet fra '{image_path}'.")
@@ -121,3 +146,4 @@ else:
     cv2.imshow('Binary Image', binary_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+'''

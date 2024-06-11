@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-from BallDetection import DetectBall
-from EggDetection import DetectEgg
-from RobotDetection import DetectRobot
+from Components.BallDetection import DetectBall
+from Components.EggDetection import DetectEgg
+from Components.RobotDetection import DetectRobot
 
 
 def infiniteCapture():
@@ -32,7 +32,7 @@ def infiniteCapture():
                 for contour in robot_contour:
                     for point in contour:
                         x, y = point
-                        print(f"Green point: ({x}, {y})")
+                        #print(f"Green point: ({x}, {y})")
 
 
             # If balls are found, draw them on the image
@@ -67,7 +67,7 @@ def infiniteCapture():
             #Also for windows
             #cv2.namedWindow('Objects Detected', cv2.WINDOW_NORMAL)
             #cv2.resizeWindow('Objects Detected', 1280, 720)
-            #cv2.imshow('Objects Detected', frame)
+            cv2.imshow('Objects Detected', frame)
 
             # Break the loop if 'q' key is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -105,7 +105,7 @@ def bitchImagePlease():
             for contour in robot_contour:
                 for point in contour:
                     x, y = point
-                    print(f"Green point: ({x}, {y})")
+                    #print(f"Green point: ({x}, {y})")
 
 
         # If balls are found, draw them on the image

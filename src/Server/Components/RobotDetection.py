@@ -26,7 +26,7 @@ def DetectRobot(frame):
                 #x, y, w, h = cv2.boundingRect(largest_contour)
                 return largest_contour
         else:
-                print("No green area found in the image.")
+                #print("No green area found in the image.")
                 return None
 
 """""
