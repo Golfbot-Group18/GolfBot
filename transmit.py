@@ -7,6 +7,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 
+from MainImageAnalysis import bitchImagePlease, infiniteCapture
 
 import time
 import socket
@@ -55,7 +56,7 @@ feed = Motor(Port.C)
 
 
 
-
+balls, egg, robotContour = infiniteCapture()
 
 #Running the feedmotor
 #driveFunc.feedMotor(ev3,feed, 1)
