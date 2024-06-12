@@ -2,16 +2,16 @@ import os
 import cv2
 import numpy as np
 
-from src.Components.BallDetection import DetectBall
-from src.Components.EggDetection import DetectEgg
-from src.Components.RobotDetection import DetectRobot
+from src.Server.Components.BallDetection import DetectBall
+from src.Server.Components.EggDetection import DetectEgg
+from src.Server.Components.RobotDetection import DetectRobot
 
 #just a change to test git
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', '..', 'Data', 'Images', 'Robot_green.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
