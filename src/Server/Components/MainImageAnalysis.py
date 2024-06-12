@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-from Components.BallDetection import DetectBall
-from Components.EggDetection import DetectEgg
-from Components.RobotDetection import DetectRobot
+from src.Server.Components.BallDetection import DetectBall
+from src.Server.Components.EggDetection  import DetectEgg
+from src.Server.Components.RobotDetection  import DetectRobot
 
 
 def infiniteCapture():

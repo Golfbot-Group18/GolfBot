@@ -29,6 +29,7 @@ def DetectRobot(frame):
                 #print("No green area found in the image.")
                 return None
 
+
 """""
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte stig til billede filerne
 script_dir = os.path.dirname(os.path.abspath(__file__))
