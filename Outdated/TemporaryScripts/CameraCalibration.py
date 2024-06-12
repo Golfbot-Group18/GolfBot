@@ -11,14 +11,15 @@ while True:
     if not ret:
         print("Error: Unable to capture frame.")
         break
+    # Display the frame with circles and labels
+    cv2.imshow('Camera View', frame)
 
-    if cv2.waitKey(0) & 0xFF == ord('s'):
+    if cv2.waitKey(5) & 0xFF == ord('s'):
         cv2.imwrite('img' + str(num) + '.png', frame)
         print("image saved!")
         num += 1
 
-    # Display the frame with circles and labels
-    cv2.imshow('Camera View', frame)
+
 
     # Break the loop if 'q' key is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
