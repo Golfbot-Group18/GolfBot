@@ -13,7 +13,7 @@ objp[:,:2] = np.mgrid[0:7,0:7].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-images = glob.glob(r'images/*.jpg')
+images = glob.glob(r'images/*.png')
 
 # path = 'results'
 # pathlib.Path(path).mkdir(parents=True, exist_ok=True)
@@ -24,7 +24,7 @@ for fname in images:  # Here, 10 can be changed to whatever number you like to c
     #print(images[im_i])
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Find the chess board corners
-    ret, corners = cv2.findChessboardCorners(gray, (7,7), None)
+    ret, corners = cv2.findChessboardCorners(gray, (11,8), None)
     # If found, add object points, image points (after refining them)
     if ret == True:
         objpoints.append(objp)   # Certainly, every loop objp is the same, in 3D.

@@ -4,7 +4,7 @@ import numpy as np
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 #script_dir = os.path.dirname(os.path.abspath(__file__))
-#image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
+#image_path = os.path.join(script_dir, '..', 'Data', 'images', 'Empty_course.jpeg')
 #img = cv2.imread(image_path)
 
 def giveMeBinaryBitch(img):
