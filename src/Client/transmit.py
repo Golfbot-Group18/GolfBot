@@ -7,7 +7,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 
-from MainImageAnalysis import bitchImagePlease, infiniteCapture
+from src.Server.Components.MainImageAnalysis import bitchImagePlease, infiniteCapture
 
 import time
 import socket
@@ -16,11 +16,11 @@ import socket
 # Click "Open user guide" on the EV3 extension tab for more information.
 
 # our own class for simple drive to motors
-import drive
+# import drive
 
 
 # setting up the class of functions that drives motors
-driveFunc = drive.Drive
+# driveFunc = drive.Drive
 
 # The commands for the drive function are the following: 
 
@@ -65,10 +65,10 @@ balls, egg, robotContour = infiniteCapture()
 
 
 
-driveFunc.singleMotor(ev3,leftMotor,1)
-driveFunc.singleMotor(ev3,rightMotor,0)
-time.sleep(3)
-driveFunc.stopBothMotors(ev3,leftMotor,rightMotor)
+#d riveFunc.singleMotor(ev3,leftMotor,1)
+# driveFunc.singleMotor(ev3,rightMotor,0)
+# time.sleep(3)
+# driveFunc.stopBothMotors(ev3,leftMotor,rightMotor)
 
 
 #feed.run(-40000)
