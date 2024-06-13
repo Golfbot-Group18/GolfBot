@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+
+from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import DetectBall
 from src.Server.Components.EggDetection  import DetectEgg
 from src.Server.Components.RobotDetection  import DetectRobot
@@ -23,6 +25,7 @@ def infiniteCapture():
             print("Error: Unable to capture frame.")
             break
         else:
+            frame = CalibrateCamera(frame)
             balls = DetectBall(frame)
             egg = DetectEgg(frame)
             robot_contour = DetectRobot(frame)

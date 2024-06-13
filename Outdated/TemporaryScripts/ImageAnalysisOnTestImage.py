@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 
+from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import DetectBall
 from src.Server.Components.EggDetection import DetectEgg
 from src.Server.Components.RobotDetection import DetectRobot
@@ -21,6 +22,9 @@ frame = cv2.imread(image_path)
 if frame is None:
     print(f"Error: Unable to load the image from '{image_path}'.")
 else:
+    new_frame = CalibrateCamera(frame)
+
+
     balls = DetectBall(frame)
     egg = DetectEgg(frame)
     robot_contour = DetectRobot(frame)
@@ -66,5 +70,6 @@ else:
 
     # Display the image with detected circles and contours
     cv2.imshow('Objects Detected', frame)
+    cv2.imshow('Undistorted', new_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
