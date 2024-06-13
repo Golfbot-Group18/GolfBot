@@ -1,11 +1,12 @@
 import os
 import cv2
 import numpy as np
+from scipy.ndimage import binary_dilation
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
-#script_dir = os.path.dirname(os.path.abspath(__file__))
-#image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
-#img = cv2.imread(image_path)
+# script_dir = os.path.dirname(os.path.abspath(__file__))
+# image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
+# img = cv2.imread(image_path)
 
 def giveMeBinaryBitch(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -57,58 +58,19 @@ def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 2
         cv2.line(img, (0, y), (width, y), color_y, 1)
         cv2.putText(img, str(y), (width // 2, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_y, 1)
 
-def generate_grid(binary_image, interval):
+def generate_grid(binary_image, interval=1):
     height, width = binary_image.shape
-    print(f"Height: {height}, Width: {width}")
     grid = []
-    for y in range(0, height):
+    for y in range(0, height, interval):
         row = []
-        for x in range(0, width):
-            cell = binary_image[y:y+interval, x:x+interval]
-            if np.any(cell == 255):
+        for x in range(0, width, interval):
+            cell = binary_image[y:y + interval, x:x + interval]
+            if np.any(cell == 255):  #Hvid er en forhindring.
                 row.append(1)
             else:
                 row.append(0)
         grid.append(row)
-    return grid
-
-def visualize_grid(grid, interval):
-    grid_height = len(grid)
-    grid_width = len(grid[0])
-    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255 # Hvid baggrund
-
-    for y in range(grid_height):
-        for x in range(grid_width):
-            color = (0, 0, 0) if grid[y][x] == 1 else (255, 255, 255)  # Sort celle hvis 1, ellers hvid celle
-            cv2.rectangle(vis_img, (x * interval, y * interval), ((x + 1) * interval, (y + 1) * interval), color, -1)
-
-    for x in range(0, grid_width * interval, interval):
-        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
-    for y in range(0, grid_height * interval, interval):
-        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
-
-    return vis_img
-
-def visualize_grid_with_path(grid, interval=10, path=[]):
-    grid_height = len(grid)
-    grid_width = len(grid[0])
-    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255
-
-    for y in range(grid_height):
-        for x in range(grid_width):
-            if grid[y][x] == 1: 
-                vis_img[y * interval:(y + 1) * interval, x * interval:(x + 1) * interval] = (0, 0, 0)
-
-    for (y, x) in path:
-        cv2.circle(
-            vis_img, (x * interval + interval // 2, y * interval + interval // 2), interval*10, (0, 0, 0), 1)
-    
-    for x in range(0, grid_width * interval, interval):
-        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
-    for y in range(0, grid_height * interval, interval):
-        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
-
-    return vis_img
+    return np.array(grid)
 '''
 # Verifikation af at billede læses korrekt
 if img is None:

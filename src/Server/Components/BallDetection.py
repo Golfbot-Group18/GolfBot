@@ -76,3 +76,6 @@ def DetectBall(frame):
     )
     if circles is not None:
         return circles
+
+def GetBallPoints():
+    return [[[629, 547, 14280882], [1012, 66, 15.262188]]]

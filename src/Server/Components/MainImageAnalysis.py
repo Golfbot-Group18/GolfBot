@@ -78,14 +78,6 @@ def infiniteCapture():
     cv2.destroyAllWindows()
     return balls, egg, robot_contour 
 
-def giveMeFrames():
-    cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    if not ret:
-        print("Error: Unable to capture frame.")
-    else:
-        return frame
-
 def bitchImagePlease():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
@@ -146,3 +138,11 @@ def bitchImagePlease():
     cv2.destroyAllWindows()
     
     return balls, egg, robot_contour
+
+def giveMeFrames():
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Unable to capture frame.")
+    else:
+        return frame
