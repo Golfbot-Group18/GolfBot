@@ -3,8 +3,8 @@ import numpy as np
 
 
 def DetectRobot(frame):
-    lower_green = np.array([35, 50, 50])
-    upper_green = np.array([85, 255, 255])
+    lower_green = np.array([50, 30, 100])
+    upper_green = np.array([100, 100, 255])
 
     lower_blue = np.array([0, 60, 90])
     upper_blue = np.array([255, 100, 100])
@@ -29,7 +29,7 @@ def DetectColor(frame, lower, upper):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter contours by area (you can adjust the threshold)
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 10000]
 
     if filtered_contours:
         # Get the largest contour

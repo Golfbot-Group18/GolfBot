@@ -75,3 +75,40 @@ def DetectEgg(frame):
     )
     if circles is not None:
         return circles
+
+
+def DetectEgg2(frame):
+    # Convert to grayscale
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Apply Gaussian Blur
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Use adaptive thresholding to handle varying lighting conditions
+    binary = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY_INV, 11, 2)
+
+    # Setup SimpleBlobDetector parameters
+    params = cv2.SimpleBlobDetector.Params()
+
+    # Filter by Area
+    params.filterByArea = True
+    params.minArea = 500  # Adjust this value based on the size of the egg
+    # params.maxArea = 5000  # Adjust this value based on the size of the egg
+
+    # Filter by Circularity
+    params.filterByCircularity = True
+    params.minCircularity = 0.1
+
+    # Filter by Convexity
+    params.filterByConvexity = True
+    params.minConvexity = 0.5
+
+    # Filter by Inertia (shape elongation)
+    params.filterByInertia = True
+    params.minInertiaRatio = 0.2
+
+    detector = cv2.SimpleBlobDetector.create(params)
+    egg = detector.detect(frame)
+
+    return egg

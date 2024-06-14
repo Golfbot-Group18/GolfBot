@@ -4,7 +4,7 @@ import numpy as np
 
 from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import DetectBall, DetectOrangeBall
-from src.Server.Components.EggDetection import DetectEgg
+from src.Server.Components.EggDetection import DetectEgg, DetectEgg2
 from src.Server.Components.RobotDetection import DetectRobot
 
 #just a change to test git
@@ -12,7 +12,7 @@ from src.Server.Components.RobotDetection import DetectRobot
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_blue.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle1.png')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -28,10 +28,14 @@ else:
     balls = DetectBall(frame)
     egg = DetectEgg(frame)
     green_area, blue_area = DetectRobot(frame)
+
+    eggs = DetectEgg2(frame)
+
+    im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
     # Draw the bounding rectangle on the original image
     if green_area is not None:
         cv2.drawContours(frame, [green_area], -1, (0, 255, 0), 2)
-
         for contour in green_area:
             for point in contour:
                 x, y = point
@@ -94,6 +98,7 @@ else:
 
     # Display the image with detected circles and contours
     cv2.imshow('Objects Detected', frame)
+  #  cv2.imshow('Blobs Detected', im_with_keypoints)
     # cv2.imshow('Undistorted', new_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

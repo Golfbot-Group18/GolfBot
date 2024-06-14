@@ -28,16 +28,22 @@ def infiniteCapture():
             frame = CalibrateCamera(frame)
             balls = DetectBall(frame)
             egg = DetectEgg(frame)
-            robot_contour = DetectRobot(frame)
+            green_area, blue_area = DetectRobot(frame)
+
             # Draw the bounding rectangle on the original image
-            if robot_contour is not None:
-                cv2.drawContours(frame, [robot_contour], -1, (0, 255, 0), 2)
-                for contour in robot_contour:
+            if green_area is not None:
+                cv2.drawContours(frame, [green_area], -1, (0, 255, 0), 2)
+                for contour in green_area:
                     for point in contour:
                         x, y = point
-                        #print(f"Green point: ({x}, {y})")
+                        print(f"Green point: ({x}, {y})")
 
-
+            if blue_area is not None:
+                cv2.drawContours(frame, [blue_area], -1, (0, 255, 0), 2)
+                for contour in blue_area:
+                    for point in contour:
+                        x, y = point
+                        print(f"Blue point: ({x}, {y})")
             # If balls are found, draw them on the image
             if balls is not None:
                 balls = np.uint16(np.around(balls))
@@ -79,7 +85,7 @@ def infiniteCapture():
     # Release the camera and close all windows
     cap.release()
     cv2.destroyAllWindows()
-    return balls, egg, robot_contour 
+    return balls, egg , green_area
 
 def giveMeFrames():
     cap = cv2.VideoCapture(0)

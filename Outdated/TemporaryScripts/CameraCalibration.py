@@ -15,7 +15,7 @@ while True:
     cv2.imshow('Camera View', frame)
 
     if cv2.waitKey(5) & 0xFF == ord('s'):
-        cv2.imwrite('img' + str(num) + '.png', frame)
+        cv2.imwrite('RobotTriangle' + str(num) + '.png', frame)
         print("image saved!")
         num += 1
 
