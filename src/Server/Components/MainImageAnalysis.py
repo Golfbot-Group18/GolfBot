@@ -4,6 +4,8 @@ from Components.BallDetection import DetectBall
 from Components.EggDetection import DetectEgg
 from Components.RobotDetection import DetectRobot
 
+from src.Server.Camera.Calibration import CalibrateCamera
+
 
 def infiniteCapture():
     # Open a connection to the camera (0 is usually the default camera)
@@ -23,6 +25,7 @@ def infiniteCapture():
             print("Error: Unable to capture frame.")
             break
         else:
+            frame = CalibrateCamera(frame)
             balls = DetectBall(frame)
             egg = DetectEgg(frame)
             robot_contour = DetectRobot(frame)
