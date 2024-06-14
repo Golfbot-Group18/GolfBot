@@ -57,20 +57,6 @@ def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 2
     for y in range(0, height, interval):
         cv2.line(img, (0, y), (width, y), color_y, 1)
         cv2.putText(img, str(y), (width // 2, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_y, 1)
-
-def generate_grid(binary_image, interval=1):
-    height, width = binary_image.shape
-    grid = []
-    for y in range(0, height, interval):
-        row = []
-        for x in range(0, width, interval):
-            cell = binary_image[y:y + interval, x:x + interval]
-            if np.any(cell == 255):  #Hvid er en forhindring.
-                row.append(1)
-            else:
-                row.append(0)
-        grid.append(row)
-    return np.array(grid)
 '''
 # Verifikation af at billede læses korrekt
 if img is None:
