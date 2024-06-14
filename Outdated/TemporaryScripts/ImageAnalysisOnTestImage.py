@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 
 from src.Server.Camera.Calibration import CalibrateCamera
-from src.Server.Components.BallDetection import DetectBall
+from src.Server.Components.BallDetection import DetectBall, DetectOrangeBall
 from src.Server.Components.EggDetection import DetectEgg
 from src.Server.Components.RobotDetection import DetectRobot
 
@@ -12,7 +12,7 @@ from src.Server.Components.RobotDetection import DetectRobot
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_blue.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -24,17 +24,41 @@ if frame is None:
 else:
     new_frame = CalibrateCamera(frame)
 
-
+    orange = DetectOrangeBall(frame)
     balls = DetectBall(frame)
     egg = DetectEgg(frame)
-    robot_contour = DetectRobot(frame)
+    green_area, blue_area = DetectRobot(frame)
     # Draw the bounding rectangle on the original image
-    if robot_contour is not None:
-        cv2.drawContours(frame, [robot_contour], -1, (0, 255, 0), 2)
-        for contour in robot_contour:
+    if green_area is not None:
+        cv2.drawContours(frame, [green_area], -1, (0, 255, 0), 2)
+
+        for contour in green_area:
             for point in contour:
                 x, y = point
                 print(f"Green point: ({x}, {y})")
+
+
+    if blue_area is not None:
+        cv2.drawContours(frame, [blue_area], -1, (0, 255, 0), 2)
+        for contour in blue_area:
+            for point in contour:
+                x, y = point
+                print(f"Blue point: ({x}, {y})")
+
+    # If balls are found, draw them on the image
+    if orange is not None:
+        balls = np.uint16(np.around(balls))
+        print("Orange ball Coordinates:")
+        for i, circle in enumerate(balls[0, :]):
+            # Draw the outer circle
+            cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
+            # Draw the center of the circle
+            cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
+
+            label_position = (circle[0] - 10, circle[1] - 10)
+            cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            x, y, radius = circle
+            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
     # If balls are found, draw them on the image
     if balls is not None:
@@ -70,6 +94,6 @@ else:
 
     # Display the image with detected circles and contours
     cv2.imshow('Objects Detected', frame)
-    cv2.imshow('Undistorted', new_frame)
+    # cv2.imshow('Undistorted', new_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

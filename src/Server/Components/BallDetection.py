@@ -1,6 +1,9 @@
 import os
 import cv2
 import numpy as np
+
+from src.Server.Components.CourseDetection import detect_color, convert_to_binary
+
 '''
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +59,8 @@ else:
     cv2.destroyAllWindows()
 
 '''
+
+
 def DetectBall(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -68,6 +73,30 @@ def DetectBall(frame):
         blurred,
         cv2.HOUGH_GRADIENT_ALT,
         dp=1,
+        minDist=20,
+        param1=50,
+        param2=0.9,
+        minRadius=10,
+        maxRadius=20
+    )
+    if circles is not None:
+        return circles
+
+
+def DetectOrangeBall(frame):
+    #lower_orange = np.array([10, 20, 70])
+    #upper_orange = np.array([30, 255, 255])
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #mask = cv2.inRange(hsv, lower_orange, upper_orange)
+    mask = convert_to_binary(hsv)
+    #mask = cv2.GaussianBlur(mask, (7, 7), 2)
+    cv2.imshow("mask", mask)
+
+    circles = cv2.HoughCircles(
+        mask,
+        cv2.HOUGH_GRADIENT_ALT,
+        dp=1.5,
         minDist=20,
         param1=50,
         param2=0.9,

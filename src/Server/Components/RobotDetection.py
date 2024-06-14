@@ -1,33 +1,45 @@
 import cv2
 import numpy as np
 
+
 def DetectRobot(frame):
+    lower_green = np.array([35, 50, 50])
+    upper_green = np.array([85, 255, 255])
 
-        # Konverter fra BGR til HSV farverummet
-        img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    lower_blue = np.array([0, 60, 90])
+    upper_blue = np.array([255, 100, 100])
 
-        lower_green = np.array([35, 50, 50])
-        upper_green = np.array([85, 255, 255])
+    green_area = DetectColor(frame, lower_green, upper_green)
+    blue_area = DetectColor(frame, lower_blue, upper_blue)
 
-        # Mask the image to find all green areas
-        mask = cv2.inRange(img_hsv, lower_green, upper_green)
+    return green_area, blue_area
 
-        # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
-        # Hence, the underscore
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Filter contours by area (you can adjust the threshold)
-        filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+def DetectColor(frame, lower, upper):
+    # Konverter fra BGR til HSV farverummet
+    img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        if filtered_contours:
-                # Get the largest contour
-                largest_contour = max(filtered_contours, key=cv2.contourArea)
+    # img_hsv[..., 1] = img_hsv[..., 1]*1.1
 
-                #x, y, w, h = cv2.boundingRect(largest_contour)
-                return largest_contour
-        else:
-                #print("No green area found in the image.")
-                return None
+    # Mask the image to find all green areas
+    mask = cv2.inRange(img_hsv, lower, upper)
+
+    # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
+    # Hence, the underscore
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours by area (you can adjust the threshold)
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+
+    if filtered_contours:
+        # Get the largest contour
+        largest_contour = max(filtered_contours, key=cv2.contourArea)
+
+        #x, y, w, h = cv2.boundingRect(largest_contour)
+        return largest_contour
+    else:
+        #print("No green area found in the image.")
+        return None
 
 
 """""
