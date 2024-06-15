@@ -1,12 +1,18 @@
 import cv2
 import numpy as np
-from Components.BallDetection import DetectBall
-from Components.EggDetection import DetectEgg
-from Components.RobotDetection import DetectRobot
+#from BallDetection import DetectBall
+#from EggDetection import DetectEgg
+#from RobotDetection import DetectRobot
 
-from src.Server.Camera.Calibration import CalibrateCamera
+def giveMeFrames():
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Unable to capture frame.")
+    else:
+        return frame
 
-
+'''
 def infiniteCapture():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
@@ -25,7 +31,7 @@ def infiniteCapture():
             print("Error: Unable to capture frame.")
             break
         else:
-            frame = CalibrateCamera(frame)
+            #frame = CalibrateCamera(frame)
             balls = DetectBall(frame)
             egg = DetectEgg(frame)
             robot_contour = DetectRobot(frame)
@@ -141,11 +147,5 @@ def bitchImagePlease():
     cv2.destroyAllWindows()
     
     return balls, egg, robot_contour
-
-def giveMeFrames():
-    cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    if not ret:
-        print("Error: Unable to capture frame.")
-    else:
-        return frame
+    '''
+    

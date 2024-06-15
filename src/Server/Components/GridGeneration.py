@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from sklearn.cluster import DBSCAN
+from shapely.geometry import Polygon
 
 def generate_grid(binary_image, interval=1):
     height, width = binary_image.shape
@@ -37,6 +37,9 @@ def find_rectangular_course(grid):
         return None  # No course found
 
     return list(zip(coords[0], coords[1]))
+
+def edge_polygon_from_course(course_coords):
+    return Polygon(course_coords)
 
 def process_grid(binary_grid, interval=1, x_range=(300, 600), y_range=(700, 1100)):
     grid = generate_grid(binary_grid, interval)

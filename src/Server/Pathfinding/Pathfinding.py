@@ -1,5 +1,6 @@
-from queue import PriorityQueue
+from queue import PriorityQueue, Queue
 import numpy as np
+from shapely.geometry import Point
 
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1]) #Manhattan distance - heuristic between two points in a grid, x1-x2 + y1-y2. 
@@ -41,13 +42,15 @@ def a_star_search(grid, start, goal):
     path.reverse()
     return path 
 
-def a_star_fms_search(grid, clearance_grid, start, goal, robot_size, goal_clearance):
-    #Same as function above but we're now using the clearance grid to check if the robot can fit through the path.
+def a_star_fms_search(grid, clearance_grid, start, goal, robot_size):
     rows, cols = grid.shape
     open_set = PriorityQueue()
     open_set.put((0, start))
     came_from = {}
     cost_so_far = {start: 0}
+    
+    # Calculate the required clearance based on robot size
+    required_clearance = robot_size / 2
 
     while not open_set.empty():
         _, current = open_set.get()
@@ -55,11 +58,14 @@ def a_star_fms_search(grid, clearance_grid, start, goal, robot_size, goal_cleara
         if current == goal:
             break
 
+        # Explore neighboring cells
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             neighbor = (current[0] + dx, current[1] + dy)
+            
+            # Check if the neighbor is within grid bounds
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols:
-                required_clearance = goal_clearance if neighbor == goal else robot_size
-                if clearance_grid[neighbor[0]][neighbor[1]] >= required_clearance:
+                # Ensure the neighbor cell has sufficient clearance for the robot
+                if clearance_grid[neighbor[0], neighbor[1]] >= required_clearance:
                     new_cost = cost_so_far[current] + 1
                     if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
                         cost_so_far[neighbor] = new_cost
@@ -67,17 +73,84 @@ def a_star_fms_search(grid, clearance_grid, start, goal, robot_size, goal_cleara
                         open_set.put((priority, neighbor))
                         came_from[neighbor] = current
 
+    # Reconstruct the path from goal to start
     current = goal
     path = []
     while current != start:
         path.append(current)
         current = came_from.get(current)
         if current is None:
+            print("Path not found")
             return []
     path.append(start)
     path.reverse()
     return path
 
+def is_goal_in_proximity(point, clearance_grid, threshold):
+    x, y = point
+    if 0 <= y < clearance_grid.shape[0] and 0 <= x < clearance_grid.shape[1]:
+        if(clearance_grid[y, x] <= threshold):
+            print(f"Clearance at {point} is {clearance_grid[y, x]}")
+            return True
+    return False
+
+def is_ball_shiftable(ball_position, clearance_grid, robot_width, buffer=10, tolerance=5):
+    x, y = ball_position
+    shift_distance = robot_width // 2 + buffer
+
+    def check_clearance(axis):
+        if(axis == "x"):
+            for i in range(-int(shift_distance), int(shift_distance) + 1):
+                if clearance_grid[y, x + i] < clearance_value - tolerance:
+                    return False
+            return True
+        else:
+            for i in range(-int(shift_distance), int(shift_distance) + 1):
+                if clearance_grid[y + i, x] < clearance_value - tolerance:
+                    return False
+            return True
+
+    # check x-axis
+    clearance_value = clearance_grid[y, x]
+    print(f"Clearance Value: {clearance_value}")
+    print(f"We will check this if-statement for x-axis: {clearance_grid[y][x + int(shift_distance)]} >= {clearance_value} - {tolerance} and {clearance_grid[y][x - int(shift_distance)]} >= {clearance_value} - {tolerance}")
+    print(f"We will check this if-statement for y-axis: {clearance_grid[y + int(shift_distance)][x]} >= {clearance_value} - {tolerance} and {clearance_grid[y - int(shift_distance)][x]} >= {clearance_value} - {tolerance}")
+    if (check_clearance("x")):
+        print("Can shift along y-axis")
+        print(f"Clearance Value at target: {clearance_grid[y][x+int(shift_distance)]}")
+        # we can shift along the y-axis
+        if clearance_grid[y + int(shift_distance)][x] >= clearance_value - tolerance:
+            print("Can shift up")
+            print(f"Clearance Value at target: {clearance_grid[y+int(shift_distance)][x]}")
+            shift_goal = (x, y + int(shift_distance))
+        elif clearance_grid[x][y - int(shift_distance)] >= clearance_value - tolerance:
+            print("Can shift down")
+            print(f"Clearance Value at target: {clearance_grid[y-int(shift_distance)][x]}")
+            shift_goal = (x, y - int(shift_distance))
+        else:
+            return False, None
+        
+    elif (check_clearance("y")):
+        print("Can shift along x-axis")
+        print(f"Clearance Value at target: {clearance_grid[y+int(shift_distance)][x]}")
+        # we can shift along the x-axis
+        if clearance_grid[y][x + int(shift_distance)] >= clearance_value - tolerance:
+            print("Can shift right")
+            print(f"Clearance Value at target: {clearance_grid[y][x+int(shift_distance)]}")
+            shift_goal = (x + int(shift_distance), y)
+            shift_direction = "right"
+        elif clearance_grid[y][x - int(shift_distance)] >= clearance_value - tolerance:
+            print("Can shift left")
+            print(f"Clearance Value at target: {clearance_grid[y][x-int(shift_distance)]}")
+            shift_goal = (x - int(shift_distance), y)
+            shift_direction = "left"
+        else:
+            return False, None
+    else:
+        return False, None
+
+    return True, shift_goal
+    
 def calculate_clearance_grid(grid, max_clearance):
     # Calculate the clearance grid for a given binary grid, where each cell contains the distance to the nearest obstacle.
     rows, cols = grid.shape

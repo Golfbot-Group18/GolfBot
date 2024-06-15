@@ -78,4 +78,8 @@ def DetectBall(frame):
         return circles
 
 def GetFixedBallPoints():
-    return [[[629, 547, 14280882], [1012, 66, 15.262188]]]
+    return [[[1061, 398, 14.231433], [900, 951, 14.262188]]]
+
+def is_point_in_proximity(point, tree, threshold=1.5):
+    result = tree.query_ball_point(point, threshold)
+    return len(result) > 0
