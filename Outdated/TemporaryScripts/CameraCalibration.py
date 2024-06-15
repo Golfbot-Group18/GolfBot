@@ -3,7 +3,7 @@ import numpy as np
 
 # Open a connection to the camera (0 is usually the default camera)
 cap = cv2.VideoCapture(0)
-num = 1
+num = 9
 while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
