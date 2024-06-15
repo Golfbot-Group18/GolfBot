@@ -90,6 +90,7 @@ def CalculateRobotWidth(contour):
 
 def CalculateRobotHeading(contour):
     sorted_lengths = CalculateRobotTriangle(contour)
+    return None
 
 
 
