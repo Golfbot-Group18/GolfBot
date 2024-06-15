@@ -89,9 +89,23 @@ def CalculateRobotWidth(contour):
 
 
 def CalculateRobotHeading(contour):
+    # Returns coordinates for tip of the robot
     sorted_lengths = CalculateRobotTriangle(contour)
-    return None
+    #side_length_1 = sorted_lengths[0]
+    side_length_2 = sorted_lengths[1]
+    side_length_3 = sorted_lengths[2]
 
+    pt1, pt2 = side_length_3[1]
+    pt3, pt4 = side_length_2[1]
+
+    overlapping_point = 0
+
+    if np.array_equal(pt1, pt3) or np.array_equal(pt1, pt4):
+        overlapping_point = pt1
+    elif np.array_equal(pt2, pt3) or np.array_equal(pt2, pt4):
+        overlapping_point = pt2
+    # Make it return the other point from side a so that we have a direction
+    return overlapping_point
 
 
 """""

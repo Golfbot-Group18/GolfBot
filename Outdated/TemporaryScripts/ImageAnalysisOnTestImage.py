@@ -44,7 +44,11 @@ else:
     cv2.drawContours(frame, [approx], 0, (0, 0, 255), 2)
 
     robot_width = CalculateRobotWidth(green_area)
-    print(robot_width)
+    print(f"Robot width: {robot_width}")
+
+    robot_heading = CalculateRobotHeading(green_area)
+    print(f"Heading coordinate: {robot_heading}")
+
 
 
     #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
