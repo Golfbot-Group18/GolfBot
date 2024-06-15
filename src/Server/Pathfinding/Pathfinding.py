@@ -42,38 +42,39 @@ def a_star_search(grid, start, goal):
     path.reverse()
     return path 
 
-def a_star_fms_search(grid, clearance_grid, start, goal, robot_size):
+def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
     rows, cols = grid.shape
     open_set = PriorityQueue()
     open_set.put((0, start))
     came_from = {}
     cost_so_far = {start: 0}
-    
-    # Calculate the required clearance based on robot size
-    required_clearance = robot_size / 2
+
+    print(f"Starting A* search from {start} to {goal} with minimum clearance {min_clearance}")
 
     while not open_set.empty():
         _, current = open_set.get()
+        #print(f"Current node: {current}")
 
         if current == goal:
+            print("Goal reached!")
             break
 
-        # Explore neighboring cells
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             neighbor = (current[0] + dx, current[1] + dy)
             
-            # Check if the neighbor is within grid bounds
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols:
-                # Ensure the neighbor cell has sufficient clearance for the robot
-                if clearance_grid[neighbor[0], neighbor[1]] >= required_clearance:
+                neighbor_clearance = clearance_grid[neighbor[0], neighbor[1]]
+                print(f"Checking neighbor: {neighbor}, Clearance: {neighbor_clearance}")
+
+                if neighbor_clearance >= min_clearance:
                     new_cost = cost_so_far[current] + 1
                     if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
                         cost_so_far[neighbor] = new_cost
                         priority = new_cost + heuristic(goal, neighbor)
                         open_set.put((priority, neighbor))
                         came_from[neighbor] = current
+                        print(f"Adding neighbor: {neighbor} with priority: {priority}")
 
-    # Reconstruct the path from goal to start
     current = goal
     path = []
     while current != start:

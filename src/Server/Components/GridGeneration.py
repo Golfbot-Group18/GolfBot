@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from shapely.geometry import Polygon
+from scipy import ndimage
 
 def generate_grid(binary_image, interval=1):
     height, width = binary_image.shape
@@ -15,6 +16,42 @@ def generate_grid(binary_image, interval=1):
                 row.append(0)
         grid.append(row)
     return np.array(grid)
+
+def create_obstacle_grid(obstacle_points, grid_shape):
+    obstacle_grid = np.ones(grid_shape, dtype=np.int32)
+    for point in obstacle_points:
+        y, x = point
+        obstacle_grid[y, x] = 0
+    return obstacle_grid
+
+def create_clearance_grid(obstacle_grid):
+    print("Unique values in obstacle grid:", np.unique(obstacle_grid))
+
+    distance_transform = ndimage.distance_transform_edt(obstacle_grid)
+
+    print("Max distance in distance transform:", np.max(distance_transform))
+
+    max_distance = np.max(distance_transform)
+    if max_distance == 0:
+        normalized_clearance = np.zeros_like(distance_transform)
+    else:
+        normalized_clearance = (distance_transform / max_distance) * 100
+    
+    return normalized_clearance, max_distance
+
+def analyze_clearance_grid(clearance_grid):
+    max_clearance = np.max(clearance_grid)
+    min_clearance = np.min(clearance_grid)
+    mean_clearance = np.mean(clearance_grid)
+    percentile_95 = np.percentile(clearance_grid, 95)
+    
+    print(f"Max clearance: {max_clearance}")
+    print(f"Min clearance: {min_clearance}")
+    print(f"Mean clearance: {mean_clearance}")
+    print(f"95th percentile clearance: {percentile_95}")
+    
+    return max_clearance, min_clearance, mean_clearance, percentile_95
+
 
 def remove_x_from_grid(grid, x_range, y_range, interval):
     x_start, x_end = x_range
@@ -31,7 +68,7 @@ def remove_x_from_grid(grid, x_range, y_range, interval):
     return grid
 
 
-def find_rectangular_course(grid):
+def find_obstacle_coords(grid):
     coords = np.where(grid == 1)
     if len(coords[0]) == 0 or len(coords[1]) == 0:
         return None  # No course found
@@ -41,11 +78,13 @@ def find_rectangular_course(grid):
 def edge_polygon_from_course(course_coords):
     return Polygon(course_coords)
 
-def process_grid(binary_grid, interval=1, x_range=(300, 600), y_range=(700, 1100)):
-    grid = generate_grid(binary_grid, interval)
-    grid = remove_x_from_grid(grid, x_range, y_range, interval)
-    return find_rectangular_course(grid)
 
+def visualize_clearance_grid(clearance_grid, interval=10):
+    clearance_grid_resized = cv2.resize(clearance_grid, (clearance_grid.shape[1] // interval, clearance_grid.shape[0] // interval))
+    clearance_grid_normalized = cv2.normalize(clearance_grid_resized, None, 0, 255, cv2.NORM_MINMAX)
+    clearance_grid_colored = cv2.applyColorMap(clearance_grid_normalized.astype(np.uint8), cv2.COLORMAP_JET)
+    return clearance_grid_colored
+'''
 def visualize_clearance_grid(clearance_grid, interval=10):
     height, width = clearance_grid.shape
     max_clearance_value = np.max(clearance_grid)
@@ -58,7 +97,7 @@ def visualize_clearance_grid(clearance_grid, interval=10):
             cv2.rectangle(vis_img, (x * interval, y * interval), ((x + 1) * interval, (y + 1) * interval), color, -1)
 
     return vis_img
-
+'''
 def visualize_grid(grid, interval=10):
     height, width = grid.shape
     vis_img = np.ones((height * interval, width * interval, 3), np.uint8) * 255

@@ -1,4 +1,5 @@
 #!/usr/bin/env pybricks-micropython
+import json
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
                                  InfraredSensor, UltrasonicSensor, GyroSensor)
@@ -7,26 +8,24 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 
-from MainImageAnalysis import bitchImagePlease, infiniteCapture
-
 import time
 import socket
 
 # This program requires LEGO EV3 MicroPython v2.0 or higher.
 # Click "Open user guide" on the EV3 extension tab for more information.
 
-# our own class for simple drive to motors
-import drive
+HOST = '0.0.0.0'
+PORT = 9999
 
+def receive_vectors(host='127.0.0.1', port=65432):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, port))
+        print(f"Connected to server at {host}:{port}")
 
-# setting up the class of functions that drives motors
-driveFunc = drive.Drive
-
-# The commands for the drive function are the following: 
-
-# Directions
-# in = 1
-# out = 
+        data = s.recv(1024).decode('utf-8')
+        vectors = json.loads(data)
+        print("Vectors received:", vectors)
+        return vectors
 
 
 
