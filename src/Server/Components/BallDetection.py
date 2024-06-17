@@ -1,11 +1,9 @@
-import os
 import cv2
 import numpy as np
 import src.Server.Components.DetectionMethods as detectionMethods
-from src.Server.Components.CourseDetection import detect_color, convert_to_binary
 
 
-def DetectBall(frame):
+def DetectAllBalls(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
@@ -51,8 +49,27 @@ def DetectOrangeBall(frame):
 
     orange_ball = detectionMethods.DetectBallContour(frame, min_area, max_area, lower_orange, upper_orange)
 
-
     return orange_ball
 
 
+def DetectBalls(frame):
+    detected_orange_ball = DetectOrangeBall(frame)
+    all_balls = DetectAllBalls(frame)
+    actual_orange_ball = None
 
+    orange_ball_rectangle = [cv2.boundingRect(contour) for contour in detected_orange_ball]
+    for rect in orange_ball_rectangle:
+        x, y, w, h = rect
+        rect_center = (x + w // 2, y + h // 2)
+        for i, circle in enumerate(all_balls[0, :]):
+            circle_center = (circle[0], circle[1])
+            dist = np.sqrt((circle_center[0] - rect_center[0]) ** 2 + (circle_center[1] - rect_center[1]) ** 2)
+            if dist < 30:  # Adjust distance threshold as needed
+                actual_orange_ball = i
+                break
+
+    #sorted_balls = list(all_balls)
+    #sorted_balls.insert(0, sorted_balls.pop(actual_orange_ball))
+    #sorted_balls = tuple(sorted_balls)
+
+    return all_balls, actual_orange_ball

@@ -26,7 +26,7 @@ def infiniteCapture():
             break
         else:
             frame = CalibrateCamera(frame)
-            balls = DetectBall(frame)
+            balls, orange_index = DetectBalls(frame)
             eggs = DetectEgg(frame)
             green_area, blue_area = DetectRobot(frame)
             orange_ball = DetectOrangeBall(frame)
@@ -45,10 +45,11 @@ def infiniteCapture():
                     for point in contour:
                         x, y = point
                         print(f"Blue point: ({x}, {y})")
+
             # If balls are found, draw them on the image
             if balls is not None:
                 balls = np.uint16(np.around(balls))
-
+                print("Ball Coordinates:")
                 for i, circle in enumerate(balls[0, :]):
                     # Draw the outer circle
                     cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
@@ -56,8 +57,15 @@ def infiniteCapture():
                     cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
                     label_position = (circle[0] - 10, circle[1] - 10)
-                    cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
+                    if orange_index is not None:
+                        if i == orange_index:
+                            cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                            x, y, radius = circle
+                            print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
+                    else:
+                        cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                        x, y, radius = circle
+                        print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
                 # If eggs are found, draw them on the image
             if eggs is not None:
                 for contour in eggs:
@@ -102,9 +110,10 @@ def bitchImagePlease():
         print("Error: Unable to capture frame.")
         #break
     else:
-        balls = DetectBall(frame)
+        balls = DetectAllBalls(frame)
         egg = DetectEgg(frame)
         robot_contour = DetectRobot(frame)
+        balls, orange_index = DetectBalls(frame)
         # Draw the bounding rectangle on the original image
         if robot_contour is not None:
             cv2.drawContours(frame, [robot_contour], -1, (0, 255, 0), 2)
@@ -113,11 +122,10 @@ def bitchImagePlease():
                     x, y = point
                     #print(f"Green point: ({x}, {y})")
 
-
         # If balls are found, draw them on the image
         if balls is not None:
             balls = np.uint16(np.around(balls))
-
+            print("Ball Coordinates:")
             for i, circle in enumerate(balls[0, :]):
                 # Draw the outer circle
                 cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
@@ -125,7 +133,14 @@ def bitchImagePlease():
                 cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
                 label_position = (circle[0] - 10, circle[1] - 10)
-                cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                if i == orange_index:
+                    cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    x, y, radius = circle
+                    print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
+                else:
+                    cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    x, y, radius = circle
+                    print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
         # If eggs are found, draw them on the image
         if egg is not None:

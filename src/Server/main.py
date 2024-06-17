@@ -1,11 +1,11 @@
-from Components.BallDetection import DetectBall
+from Components.BallDetection import DetectAllBalls
 from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
 from Components.CourseDetection import generate_grid, visualize_grid, giveMeBinaryBitch, visualize_grid_with_path
 from Pathfinding.Pathfinding import a_star_search
 import cv2
 
 frame = giveMeFrames()
-balls = DetectBall(frame)
+balls = DetectAllBalls(frame)
 print(f"Balls: {balls}")
 
 binary_course = giveMeBinaryBitch(frame)

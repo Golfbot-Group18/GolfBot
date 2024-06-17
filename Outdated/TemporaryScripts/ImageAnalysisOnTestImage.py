@@ -26,7 +26,7 @@ else:
     new_frame = CalibrateCamera(frame)
 
     orange = None
-    balls = None
+    balls, orange_index = DetectBalls(frame)
     egg = DetectEgg(frame)
     green_area, blue_area = DetectRobot(frame)
 
@@ -88,6 +88,8 @@ else:
             x, y, radius = circle
             print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
+
+
     # If balls are found, draw them on the image
     if balls is not None:
         balls = np.uint16(np.around(balls))
@@ -99,9 +101,14 @@ else:
             cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
             label_position = (circle[0] - 10, circle[1] - 10)
-            cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-            x, y, radius = circle
-            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
+            if i == orange_index:
+                cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                x, y, radius = circle
+                print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
+            else:
+                cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                x, y, radius = circle
+                print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
     # If eggs are found, draw them on the image
     if eggs is not None:
