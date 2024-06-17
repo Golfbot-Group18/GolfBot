@@ -2,6 +2,7 @@ import json
 import socket
 import cv2
 import matplotlib.pyplot as plt
+from Components.RobotDetection import *
 from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
 from Components.BallDetection import DetectBall, GetFixedBallPoints
 from Camera.Calibration import CalibrateCamera
@@ -34,6 +35,15 @@ def main():
     balls = DetectBall(frame)
     print(f"Ball points: {balls}")
 
+    robot_contour = DetectRobot(frame)
+    if robot_contour is not None:
+        side_lengths = CalculateRobotTriangle(robot_contour)
+        robot_width = side_lengths[0][0] * 2
+        print(f"Robot side lengths: {side_lengths}")
+
+    else:
+        print("No robot detected")
+
     scale_factor = calculate_scale_factor_from_ball(4.4, balls)
 
     binary_course = giveMeBinaryBitch(frame)
@@ -57,7 +67,7 @@ def main():
 
     start = (int(balls[0][0][1]), int(balls[0][0][0]))
     end = (int(balls[0][1][1]), int(balls[0][1][0]))
-    robot_size = 50
+    robot_size = robot_width
     buffer = 10
     required_clearance = (robot_size / 2 + buffer) / max_distance * 100
     min_clearance = required_clearance
@@ -81,7 +91,7 @@ def main():
     print(f"Vectors: {vectors}")
     filtered_vectors = filter_vectors(vectors)
     print(f"Filtered vectors: {filtered_vectors}")
-    start_server(filtered_vectors)
+    #start_server(filtered_vectors)
     
     cv2.imshow('Binary Course', binary_course)
     cv2.imshow('Standard Grid', grid_image)

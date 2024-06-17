@@ -64,7 +64,7 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
             
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols:
                 neighbor_clearance = clearance_grid[neighbor[0], neighbor[1]]
-                print(f"Checking neighbor: {neighbor}, Clearance: {neighbor_clearance}")
+                #print(f"Checking neighbor: {neighbor}, Clearance: {neighbor_clearance}")
 
                 if neighbor_clearance >= min_clearance:
                     new_cost = cost_so_far[current] + 1
@@ -73,7 +73,7 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
                         priority = new_cost + heuristic(goal, neighbor)
                         open_set.put((priority, neighbor))
                         came_from[neighbor] = current
-                        print(f"Adding neighbor: {neighbor} with priority: {priority}")
+                        #print(f"Adding neighbor: {neighbor} with priority: {priority}")
 
     current = goal
     path = []

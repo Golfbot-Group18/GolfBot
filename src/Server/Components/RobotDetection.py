@@ -14,7 +14,7 @@ def DetectRobot(frame):
     # blue_area = DetectColor(frame, lower_blue, upper_blue)
     # tip =  DetectRobotEdge(frame)
 
-    return green_area, None
+    return green_area
 
 
 def DetectColor(frame, lower, upper):
