@@ -4,7 +4,7 @@ import numpy as np
 
 from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import DetectBall, DetectOrangeBall
-from src.Server.Components.EggDetection import DetectEgg, DetectEgg2
+from src.Server.Components.EggDetection import *
 from src.Server.Components.RobotDetection import *
 
 #just a change to test git
@@ -12,7 +12,7 @@ from src.Server.Components.RobotDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green2.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_from.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -29,7 +29,7 @@ else:
     egg = DetectEgg(frame)
     green_area, blue_area = DetectRobot(frame)
 
-    eggs = DetectEgg2(frame)
+    eggs = DetectEgg(frame)
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
@@ -102,20 +102,9 @@ else:
             print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
     # If eggs are found, draw them on the image
-    if egg is not None:
-        egg = np.uint16(np.around(egg))
-        print("Egg Coordinates:")
-        for i, circle in enumerate(egg[0, :]):
-            # Draw the outer circle
-            cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
-            # Draw the center of the circle
-            cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
-
-            label_position = (circle[0] - 10, circle[1] - 10)
-            cv2.putText(frame, "Egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-            x, y, radius = circle
-            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
-
+    if eggs is not None:
+        for contour in eggs:
+            cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
 
     # Display the image with detected circles and contours

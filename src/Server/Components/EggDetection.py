@@ -58,7 +58,7 @@ else:
 '''
 
 
-def DetectEgg(frame):
+def DetectEggOld(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
@@ -80,40 +80,36 @@ def DetectEgg(frame):
         return circles
 
 
-def DetectEgg2(frame):
-    min_threshold = 100  # Adjust based on your requirements
-    max_threshold = 200  # Adjust based on your requirements
+def DetectEgg(frame):
+    min_canny_threshold = 100
+    max_canny_threshold = 200
+    min_ellipse_size = (30, 30)  # Minimum width and height of the ellipse
+    max_ellipse_size = (100, 100)  # Maximum width and height of the ellipse
 
-    # Read the image in grayscale
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # Invert the image
-    img = cv2.bitwise_not(img)
+    grey_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    _, binary_image = cv2.threshold(grey_image, 230, 255, cv2.THRESH_BINARY)
+    inverted_image = cv2.bitwise_not(binary_image)
 
-    # Apply Gaussian blur
+    # Gaussian blur
     img_size = (9, 9)
-    img = cv2.GaussianBlur(img, img_size, 4)
+    gaussian_image = cv2.GaussianBlur(inverted_image, img_size, 4)
 
-    # Apply Canny edge detector
-    img_canny = cv2.Canny(img, min_threshold, max_threshold)
+    # Canny edge detector
+    canny_image = cv2.Canny(gaussian_image, min_canny_threshold, max_canny_threshold)
 
     # Find contours
-    contours, hierarchy = cv2.findContours(img_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(canny_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Fit ellipses to the contours
-    rectangles = []
+    ellipse_contours = []
     for contour in contours:
         if len(contour) >= 5:  # FitEllipse needs at least 5 points
             ellipse = cv2.fitEllipse(contour)
-            rectangles.append(ellipse)
-
-    # Convert the image to BGR
-    img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
-    # Draw ellipses on the image
-    for rectangle in rectangles:
-        cv2.ellipse(img_color, rectangle, (0, 0, 255), 2)  # Red color
-
-    # Display the image with ellipses
-    cv2.imshow('Ellipses', img_color)
-
-    return None
+            width, height = ellipse[1]
+            if min_ellipse_size[0] <= width <= max_ellipse_size[0] and min_ellipse_size[1] <= height <= \
+                    max_ellipse_size[1]:
+                ellipse_contour = cv2.ellipse2Poly((int(ellipse[0][0]), int(ellipse[0][1])),
+                                                   (int(width / 2), int(height / 2)),
+                                                   int(ellipse[2]), 0, 360, 10)
+                ellipse_contours.append(ellipse_contour)
+    return ellipse_contours
