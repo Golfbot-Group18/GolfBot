@@ -39,7 +39,7 @@ def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
 
     # Find contours
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+    cv2.imshow("mask", mask)
     # Filter contours by area and shape (assuming a ball shape)
     filtered_contours = []
     for contour in contours:
@@ -47,7 +47,7 @@ def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
         if min_area < area < max_area:
             perimeter = cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
-            if len(approx) > 5:  # Adjust the number of vertices according to ball appearance
+            if len(approx) > 4:  # Adjust the number of vertices according to ball appearance
                 filtered_contours.append(contour)
 
     return filtered_contours

@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 
 from src.Server.Camera.Calibration import CalibrateCamera
-from src.Server.Components.BallDetection import DetectBall
-from src.Server.Components.EggDetection  import DetectEgg
-from src.Server.Components.RobotDetection  import DetectRobot
+from src.Server.Components.BallDetection import *
+from src.Server.Components.EggDetection  import *
+from src.Server.Components.RobotDetection  import *
 
 
 def infiniteCapture():
@@ -29,6 +29,7 @@ def infiniteCapture():
             balls = DetectBall(frame)
             eggs = DetectEgg(frame)
             green_area, blue_area = DetectRobot(frame)
+            orange_ball = DetectOrangeBall(frame)
 
             # Draw the bounding rectangle on the original image
             if green_area is not None:
@@ -63,7 +64,11 @@ def infiniteCapture():
                     cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
             # Display the frame with circles and labels
-            
+
+            # If orange ball is found, draw them on the image
+            if orange_ball is not None:
+                for contour in orange_ball:
+                    cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
             #Also for windows
             #cv2.namedWindow('Objects Detected', cv2.WINDOW_NORMAL)

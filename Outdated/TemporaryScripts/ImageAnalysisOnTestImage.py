@@ -13,7 +13,7 @@ from src.Server.Components.DetectionMethods import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_from.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
