@@ -12,7 +12,7 @@ from src.Server.Components.RobotDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle7.png')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green2.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -32,12 +32,13 @@ else:
     eggs = DetectEgg2(frame)
 
     im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-   # rect = cv2.minAreaRect(green_area)
+    # rect = cv2.minAreaRect(green_area)
     #print(rect)
     #box = cv2.boxPoints(rect)
     #box = np.int32(box)
     #cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
 
+    '''
     epsilon = 0.02 * cv2.arcLength(green_area, True)
     approx = cv2.approxPolyDP(green_area, epsilon, True)
     print(approx)
@@ -48,7 +49,7 @@ else:
 
     robot_heading = CalculateRobotHeading(green_area)
     print(f"Heading coordinate: {robot_heading}")
-
+    '''
 
 
     #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
