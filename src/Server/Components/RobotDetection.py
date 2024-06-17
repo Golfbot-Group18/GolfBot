@@ -103,22 +103,16 @@ def CalculateRobotHeading(contour):
 
     # Overlapping point is the point of overlap of the hypotenuse and adjacent
 
-    if np.array_equal(pt1, pt3) or np.array_equal(pt1, pt4):
-        overlapping_point = pt1
-    elif np.array_equal(pt2, pt3) or np.array_equal(pt2, pt4):
-        overlapping_point = pt2
+    if np.array_equal(pt3, pt1) or np.array_equal(pt3, pt2):
+        overlapping_point = pt3
+        starting_point = pt4
+
+    elif np.array_equal(pt4, pt1) or np.array_equal(pt4, pt2):
+        overlapping_point = pt4
+        starting_point = pt3
     # Make it return the other point from side a so that we have a direction
     else:
         raise ValueError("Could not find overlapping point")
-
-    if overlapping_point is not None:
-        if np.array_equal(overlapping_point, pt3):
-            starting_point = pt3
-        else:
-            starting_point = pt4
-    else:
-        starting_point = None
-        overlapping_point = None
 
     return starting_point, overlapping_point
 
