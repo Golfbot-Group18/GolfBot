@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 
 from src.Server.Camera.Calibration import CalibrateCamera
-from src.Server.Components.BallDetection import DetectBall, DetectOrangeBall
+from src.Server.Components.BallDetection import *
 from src.Server.Components.EggDetection import *
 from src.Server.Components.RobotDetection import *
+from src.Server.Components.DetectionMethods import *
 
 #just a change to test git
 # Get the current directory where your script is located
@@ -24,12 +25,13 @@ if frame is None:
 else:
     new_frame = CalibrateCamera(frame)
 
-    orange = DetectOrangeBall(frame)
-    balls = DetectBall(frame)
+    orange = None
+    balls = None
     egg = DetectEgg(frame)
     green_area, blue_area = DetectRobot(frame)
 
     eggs = DetectEgg(frame)
+    orange_ball = DetectOrangeBall(frame)
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
@@ -104,6 +106,11 @@ else:
     # If eggs are found, draw them on the image
     if eggs is not None:
         for contour in eggs:
+            cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
+
+    # If orange ball is found, draw them on the image
+    if orange_ball is not None:
+        for contour in orange_ball:
             cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
 

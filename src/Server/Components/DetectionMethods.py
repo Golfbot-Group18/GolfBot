@@ -29,7 +29,28 @@ def DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold
                                                    (int(width / 2), int(height / 2)),
                                                    int(ellipse[2]), 0, 360, 10)
                 ellipse_contours.append(ellipse_contour)
-    return ellipse_contours
+    return ellipse_contours, canny_image
+
+
+def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # Threshold the HSV image to get only orange colors
+    mask = cv2.inRange(hsv, lower_color, upper_color)
+
+    # Find contours
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Filter contours by area and shape (assuming a ball shape)
+    filtered_contours = []
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if min_area < area < max_area:
+            perimeter = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+            if len(approx) > 5:  # Adjust the number of vertices according to ball appearance
+                filtered_contours.append(contour)
+
+    return filtered_contours
 
 
 def DetectColor(frame, lower, upper):

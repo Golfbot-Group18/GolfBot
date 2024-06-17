@@ -1,5 +1,5 @@
 import math
-import DetectionMethods as detectionMethods
+import src.Server.Components.DetectionMethods as detectionMethods
 import cv2
 import numpy as np
 

@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-import DetectionMethods as detectionMethods
+import src.Server.Components.DetectionMethods as detectionMethods
 def OldDetectEgg(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -29,5 +29,5 @@ def DetectEgg(frame):
     max_canny_threshold = 200
     min_ellipse_size = (30, 30)  # Minimum width and height of the ellipse
     max_ellipse_size = (100, 100)  # Maximum width and height of the ellipse
-    eggs = detectionMethods.DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold, max_canny_threshold)
+    eggs, _ = detectionMethods.DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold, max_canny_threshold)
     return eggs
