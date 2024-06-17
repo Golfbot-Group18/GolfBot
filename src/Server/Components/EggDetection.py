@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+
 '''
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +56,8 @@ else:
     cv2.destroyAllWindows()
 
 '''
+
+
 def DetectEgg(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -78,37 +81,39 @@ def DetectEgg(frame):
 
 
 def DetectEgg2(frame):
-    # Convert to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    min_threshold = 100  # Adjust based on your requirements
+    max_threshold = 200  # Adjust based on your requirements
 
-    # Apply Gaussian Blur
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # Read the image in grayscale
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # Invert the image
+    img = cv2.bitwise_not(img)
 
-    # Use adaptive thresholding to handle varying lighting conditions
-    binary = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                   cv2.THRESH_BINARY_INV, 11, 2)
+    # Apply Gaussian blur
+    img_size = (9, 9)
+    img = cv2.GaussianBlur(img, img_size, 4)
 
-    # Setup SimpleBlobDetector parameters
-    params = cv2.SimpleBlobDetector.Params()
+    # Apply Canny edge detector
+    img_canny = cv2.Canny(img, min_threshold, max_threshold)
 
-    # Filter by Area
-    params.filterByArea = True
-    params.minArea = 500  # Adjust this value based on the size of the egg
-    # params.maxArea = 5000  # Adjust this value based on the size of the egg
+    # Find contours
+    contours, hierarchy = cv2.findContours(img_canny, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Filter by Circularity
-    params.filterByCircularity = True
-    params.minCircularity = 0.1
+    # Fit ellipses to the contours
+    rectangles = []
+    for contour in contours:
+        if len(contour) >= 5:  # FitEllipse needs at least 5 points
+            ellipse = cv2.fitEllipse(contour)
+            rectangles.append(ellipse)
 
-    # Filter by Convexity
-    params.filterByConvexity = True
-    params.minConvexity = 0.5
+    # Convert the image to BGR
+    img_color = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
-    # Filter by Inertia (shape elongation)
-    params.filterByInertia = True
-    params.minInertiaRatio = 0.2
+    # Draw ellipses on the image
+    for rectangle in rectangles:
+        cv2.ellipse(img_color, rectangle, (0, 0, 255), 2)  # Red color
 
-    detector = cv2.SimpleBlobDetector.create(params)
-    egg = detector.detect(frame)
+    # Display the image with ellipses
+    cv2.imshow('Ellipses', img_color)
 
-    return egg
+    return None

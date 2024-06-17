@@ -31,7 +31,7 @@ else:
 
     eggs = DetectEgg2(frame)
 
-    im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
     #print(rect)
     #box = cv2.boxPoints(rect)
