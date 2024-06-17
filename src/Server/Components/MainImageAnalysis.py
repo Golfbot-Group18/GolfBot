@@ -27,7 +27,7 @@ def infiniteCapture():
         else:
             frame = CalibrateCamera(frame)
             balls = DetectBall(frame)
-            egg = DetectEgg(frame)
+            eggs = DetectEgg(frame)
             green_area, blue_area = DetectRobot(frame)
 
             # Draw the bounding rectangle on the original image
@@ -57,18 +57,10 @@ def infiniteCapture():
                     label_position = (circle[0] - 10, circle[1] - 10)
                     cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-            # If eggs are found, draw them on the image
-            if egg is not None:
-                egg = np.uint16(np.around(egg))
-
-                for i, circle in enumerate(egg[0, :]):
-                    # Draw the outer circle
-                    cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
-                    # Draw the center of the circle
-                    cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
-
-                    label_position = (circle[0] - 10, circle[1] - 10)
-                    cv2.putText(frame, "Egg", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                # If eggs are found, draw them on the image
+            if eggs is not None:
+                for contour in eggs:
+                    cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
             # Display the frame with circles and labels
             
@@ -85,7 +77,7 @@ def infiniteCapture():
     # Release the camera and close all windows
     cap.release()
     cv2.destroyAllWindows()
-    return balls, egg , green_area
+    return balls, eggs, green_area
 
 def giveMeFrames():
     cap = cv2.VideoCapture(0)

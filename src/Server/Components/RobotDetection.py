@@ -1,5 +1,5 @@
 import math
-
+import DetectionMethods as detectionMethods
 import cv2
 import numpy as np
 
@@ -8,41 +8,14 @@ def DetectRobot(frame):
     lower_green = np.array([50, 45, 80])
     upper_green = np.array([100, 150, 255])
 
-    #lower_blue = np.array([0, 60, 90])
-    #upper_blue = np.array([255, 100, 100])
+    # lower_blue = np.array([0, 60, 90])
+    # upper_blue = np.array([255, 100, 100])
 
-    green_area = DetectColor(frame, lower_green, upper_green)
+    green_area = detectionMethods.DetectColor(frame, lower_green, upper_green)
     # blue_area = DetectColor(frame, lower_blue, upper_blue)
     # tip =  DetectRobotEdge(frame)
 
     return green_area, None
-
-
-def DetectColor(frame, lower, upper):
-    # Konverter fra BGR til HSV farverummet
-    img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    #img_hsv[..., 1] = img_hsv[..., 1]*1.1
-
-    # Mask the image to find all green areas
-    mask = cv2.inRange(img_hsv, lower, upper)
-
-    # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
-    # Hence, the underscore
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Filter contours by area (you can adjust the threshold)
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 3000]
-
-    if filtered_contours:
-        # Get the largest contour
-        largest_contour = max(filtered_contours, key=cv2.contourArea)
-
-        #x, y, w, h = cv2.boundingRect(largest_contour)
-        return largest_contour
-    else:
-        #print("No green area found in the image.")
-        return None
 
 
 def euclidean_distance(point1, point2):
@@ -91,7 +64,7 @@ def CalculateRobotWidth(contour):
 def CalculateRobotHeading(contour):
     # Returns coordinates for tip of the robot
     sorted_lengths = CalculateRobotTriangle(contour)
-    #side_length_1 = sorted_lengths[0]
+    # side_length_1 = sorted_lengths[0]
     side_length_2 = sorted_lengths[1]
     side_length_3 = sorted_lengths[2]
 

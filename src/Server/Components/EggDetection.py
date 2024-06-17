@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import DetectionMethods as detectionMethods
 
 '''
 # Get the current directory where your script is located
@@ -58,7 +59,7 @@ else:
 '''
 
 
-def DetectEggOld(frame):
+def OldDetectEgg(frame):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (9, 9), 2)
@@ -85,31 +86,5 @@ def DetectEgg(frame):
     max_canny_threshold = 200
     min_ellipse_size = (30, 30)  # Minimum width and height of the ellipse
     max_ellipse_size = (100, 100)  # Maximum width and height of the ellipse
-
-    grey_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, binary_image = cv2.threshold(grey_image, 230, 255, cv2.THRESH_BINARY)
-    inverted_image = cv2.bitwise_not(binary_image)
-
-    # Gaussian blur
-    img_size = (9, 9)
-    gaussian_image = cv2.GaussianBlur(inverted_image, img_size, 4)
-
-    # Canny edge detector
-    canny_image = cv2.Canny(gaussian_image, min_canny_threshold, max_canny_threshold)
-
-    # Find contours
-    contours, _ = cv2.findContours(canny_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Fit ellipses to the contours
-    ellipse_contours = []
-    for contour in contours:
-        if len(contour) >= 5:  # FitEllipse needs at least 5 points
-            ellipse = cv2.fitEllipse(contour)
-            width, height = ellipse[1]
-            if min_ellipse_size[0] <= width <= max_ellipse_size[0] and min_ellipse_size[1] <= height <= \
-                    max_ellipse_size[1]:
-                ellipse_contour = cv2.ellipse2Poly((int(ellipse[0][0]), int(ellipse[0][1])),
-                                                   (int(width / 2), int(height / 2)),
-                                                   int(ellipse[2]), 0, 360, 10)
-                ellipse_contours.append(ellipse_contour)
-    return ellipse_contours
+    eggs = detectionMethods.DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold, max_canny_threshold)
+    return eggs
