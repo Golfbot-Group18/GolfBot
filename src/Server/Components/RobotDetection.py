@@ -7,21 +7,21 @@ def DetectRobot(frame):
     lower_green = np.array([50, 45, 80])
     upper_green = np.array([100, 150, 255])
 
-    #lower_blue = np.array([0, 60, 90])
-    #upper_blue = np.array([255, 100, 100])
+    # lower_blue = np.array([0, 60, 90])
+    # upper_blue = np.array([255, 100, 100])
 
     green_area = DetectColor(frame, lower_green, upper_green)
     # blue_area = DetectColor(frame, lower_blue, upper_blue)
     # tip =  DetectRobotEdge(frame)
 
-    return green_area, None
+    return green_area
 
 
 def DetectColor(frame, lower, upper):
     # Konverter fra BGR til HSV farverummet
     img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    #img_hsv[..., 1] = img_hsv[..., 1]*1.1
+    # img_hsv[..., 1] = img_hsv[..., 1]*1.1
 
     # Mask the image to find all green areas
     mask = cv2.inRange(img_hsv, lower, upper)
@@ -37,10 +37,10 @@ def DetectColor(frame, lower, upper):
         # Get the largest contour
         largest_contour = max(filtered_contours, key=cv2.contourArea)
 
-        #x, y, w, h = cv2.boundingRect(largest_contour)
+        # x, y, w, h = cv2.boundingRect(largest_contour)
         return largest_contour
     else:
-        #print("No green area found in the image.")
+        # print("No green area found in the image.")
         return None
 
 
@@ -63,7 +63,7 @@ def CalculateRobotTriangle(contour):
     # If the approximation returns a list longer than 3,
     # it means that the shape is not a triangle as it has more than 3 sides
     if len(approximated_points) != 3:
-        raise ValueError("The approximated contour does not represent a triangle")
+        return None
 
     # Reshapes the way the data is stored
     points = approximated_points.reshape((3, 2))
@@ -90,21 +90,31 @@ def CalculateRobotWidth(contour):
 def CalculateRobotHeading(contour):
     # Returns coordinates for tip of the robot
     sorted_lengths = CalculateRobotTriangle(contour)
-    #side_length_1 = sorted_lengths[0]
+    # side_length_1 = sorted_lengths[0]
+
+    # Side length 2 is the adjacent side to the hypotenuse
     side_length_2 = sorted_lengths[1]
+    # Side length 3 is the hypotenuse
     side_length_3 = sorted_lengths[2]
 
+    # pt variables are unsorted points pt = (x,y) of the side lengths
     pt1, pt2 = side_length_3[1]
     pt3, pt4 = side_length_2[1]
 
-    overlapping_point = 0
+    # Overlapping point is the point of overlap of the hypotenuse and adjacent
 
-    if np.array_equal(pt1, pt3) or np.array_equal(pt1, pt4):
-        overlapping_point = pt1
-    elif np.array_equal(pt2, pt3) or np.array_equal(pt2, pt4):
-        overlapping_point = pt2
+    if np.array_equal(pt3, pt1) or np.array_equal(pt3, pt2):
+        overlapping_point = pt3
+        starting_point = pt4
+
+    elif np.array_equal(pt4, pt1) or np.array_equal(pt4, pt2):
+        overlapping_point = pt4
+        starting_point = pt3
     # Make it return the other point from side a so that we have a direction
-    return overlapping_point
+    else:
+        raise ValueError("Could not find overlapping point")
+
+    return starting_point, overlapping_point
 
 
 """""

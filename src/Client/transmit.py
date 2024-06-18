@@ -25,7 +25,6 @@ def receive_vectors(host, port):
         s.connect((host, port))
         print("Connected to server at {}:{}".format(host, port))
 
-        # Receive data in chunks and concatenate until the connection is closed
         data = b""
         while True:
             chunk = s.recv(4096)
@@ -45,31 +44,3 @@ ev3 = EV3Brick()
 
 # Initialization beep
 ev3.speaker.beep()
-
-# initilize motor
-rightMotor = Motor(Port.B)
-leftMotor = Motor(Port.A)
-feed = Motor(Port.C)
-
-wheel_diameter = 10
-target_distance = 100
-
-wheel_circumference = wheel_diameter * 3.14159265359
-
-rotation = target_distance / wheel_circumference
-rotation_angle = rotation * 360
-
-driveController = Drive(Port.A, Port.B, GyroController(Port.S4))
-robot = DriveBase(leftMotor, rightMotor, 55.5, 180)
-
-
-def move_robot(vectors):
-    for distance, angle in vectors:
-        print("Moving robot: distance: {}, angle: {}".format(distance, angle))
-        driveController.turn_to_angle(angle, 50)
-        robot.straight(distance)
-        
-
-vectors = receive_vectors(HOST, PORT)
-
-move_robot(vectors)
