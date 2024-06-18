@@ -63,7 +63,7 @@ def CalculateRobotTriangle(contour):
     # If the approximation returns a list longer than 3,
     # it means that the shape is not a triangle as it has more than 3 sides
     if len(approximated_points) != 3:
-        raise ValueError("The approximated contour does not represent a triangle")
+        return None
 
     # Reshapes the way the data is stored
     points = approximated_points.reshape((3, 2))

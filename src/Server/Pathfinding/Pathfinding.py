@@ -1,10 +1,12 @@
 from queue import PriorityQueue, Queue
 import numpy as np
 from shapely.geometry import Point
+import math
 
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1]) #Manhattan distance - heuristic between two points in a grid, x1-x2 + y1-y2. 
 
+'''This is currently not used in the code. It does not use the clearance grid.'''
 def a_star_search(grid, start, goal):
     # A* search algorithm to find the shortest path between two points in a grid.
     # The grid should be a 2D list of 0s and 1s, where 0 is a valid path and 1 is an obstacle. (The binary grid)
@@ -42,6 +44,7 @@ def a_star_search(grid, start, goal):
     path.reverse()
     return path 
 
+'''At the moment this function calculates shortest path from the center point of the robot to the goal point. We might need to change this to calculate the path from the tip of the robot to the goal point. '''
 def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
     rows, cols = grid.shape
     open_set = PriorityQueue()
@@ -87,6 +90,7 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
     path.reverse()
     return path
 
+'''Also not currently used, but this function should be used to figure out if a ball is in proximity of an obstacle'''
 def is_goal_in_proximity(point, clearance_grid, threshold):
     x, y = point
     if 0 <= y < clearance_grid.shape[0] and 0 <= x < clearance_grid.shape[1]:
@@ -95,6 +99,7 @@ def is_goal_in_proximity(point, clearance_grid, threshold):
             return True
     return False
 
+'''Not used as of now, but should be used to shift the virtual ball position to a safe location'''
 def is_ball_shiftable(ball_position, clearance_grid, robot_width, buffer=10, tolerance=5):
     x, y = ball_position
     shift_distance = robot_width // 2 + buffer
@@ -139,40 +144,13 @@ def is_ball_shiftable(ball_position, clearance_grid, robot_width, buffer=10, tol
             print("Can shift right")
             print(f"Clearance Value at target: {clearance_grid[y][x+int(shift_distance)]}")
             shift_goal = (x + int(shift_distance), y)
-            shift_direction = "right"
         elif clearance_grid[y][x - int(shift_distance)] >= clearance_value - tolerance:
             print("Can shift left")
             print(f"Clearance Value at target: {clearance_grid[y][x-int(shift_distance)]}")
             shift_goal = (x - int(shift_distance), y)
-            shift_direction = "left"
         else:
             return False, None
     else:
         return False, None
 
     return True, shift_goal
-    
-def calculate_clearance_grid(grid, max_clearance):
-    # Calculate the clearance grid for a given binary grid, where each cell contains the distance to the nearest obstacle.
-    rows, cols = grid.shape
-    clearance_grid = np.full((rows, cols), max_clearance, dtype=int)
-    pq = PriorityQueue()
-
-    for y in range(rows):
-        for x in range(cols):
-            if grid[y, x] == 1:
-                clearance_grid[y, x] = 0
-                pq.put((0, y, x))
-    
-    while not pq.empty():
-        clearance, y, x = pq.get()
-        
-        for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            ny, nx = y + dy, x + dx
-            if 0 <= ny < rows and 0 <= nx < cols:
-                new_clearance = clearance + 1
-                if new_clearance < clearance_grid[ny, nx]:
-                    clearance_grid[ny, nx] = new_clearance
-                    pq.put((new_clearance, ny, nx))
-
-    return clearance_grid
