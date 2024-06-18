@@ -14,7 +14,7 @@ from src.Server.Components.CourseDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_from.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Balls2.png')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -35,7 +35,9 @@ else:
     orange_ball = DetectOrangeBall(frame)
 
     binary = giveMeBinaryBitch(frame)
-
+    giveMeCourseFramePoints(frame)
+    backend = cv2.getBuildInformation()
+    print("Metal" in backend)
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)

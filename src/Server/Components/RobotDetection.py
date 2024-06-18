@@ -11,7 +11,7 @@ def DetectRobot(frame):
     # lower_blue = np.array([0, 60, 90])
     # upper_blue = np.array([255, 100, 100])
 
-    green_area = detectionMethods.DetectColor(frame, lower_green, upper_green)
+    green_area = detectionMethods.DetectColor(frame, lower_green, upper_green, 3000)
     # blue_area = DetectColor(frame, lower_blue, upper_blue)
     # tip =  DetectRobotEdge(frame)
 

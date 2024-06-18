@@ -2,6 +2,8 @@ import os
 import cv2
 import numpy as np
 from src.Server.Components.BallDetection import DetectOrangeBall
+from src.Server.Components.DetectionMethods import *
+from sklearn.cluster import DBSCAN
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 #script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -40,6 +42,59 @@ def giveMeBinaryBitch(img):
     cv2.imshow('Result without orange ball subtraction', binary_image)
 
     return result_image
+
+def PatricksCoordinates(frame):
+    return None
+
+
+def giveMeCourseFramePoints(img):
+    result_image = giveMeBinaryBitch(img)
+
+    corners = cv2.goodFeaturesToTrack(result_image, maxCorners=100, qualityLevel=0.27, minDistance=10, blockSize=5, useHarrisDetector=True)
+
+    if corners is not None:
+        corners = np.int32(corners)
+        corners = np.array([corner.ravel() for corner in corners])
+
+        # Perform DBSCAN clustering
+        clustering = DBSCAN(eps=30, min_samples=4).fit(corners)
+        labels = clustering.labels_
+
+        # Extract unique clusters
+        unique_labels = set(labels)
+
+        # Find the centroids of the clusters
+        centroids = []
+        for label in unique_labels:
+            cluster_points = corners[labels == label]
+            centroid = np.mean(cluster_points, axis=0)
+            centroids.append(centroid)
+
+        # Ensure we have exactly four points
+       # if len(centroids) != 4:
+        #    raise ValueError("Expected to find exactly four intersection points")
+
+        # Convert centroids to integer points if needed
+        centroids = np.int32(centroids)
+
+        # Now `centroids` contains the four intersection points
+        print("Intersection Points:", centroids)
+
+        # Draw the corners on the result image
+        result_image_with_corners = np.copy(result_image)
+        for corner in corners:
+            x, y = corner.ravel()
+            cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
+
+        for centroid in centroids:
+            x, y = centroid
+            cv2.circle(img, (x, y), 5, (0, 255, 0), -1)  # Red circles for centroids
+
+        cv2.imshow('Result', result_image_with_corners)
+
+    return None
+
+
 
 
 def detect_color(img, color_range):

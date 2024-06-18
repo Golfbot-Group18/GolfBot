@@ -39,7 +39,7 @@ def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
 
     # Find contours
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.imshow("mask", mask)
+    # cv2.imshow("mask", mask)
     # Filter contours by area and shape (assuming a ball shape)
     filtered_contours = []
     for contour in contours:
@@ -53,7 +53,7 @@ def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
     return filtered_contours
 
 
-def DetectColor(frame, lower, upper):
+def DetectColor(frame, lower, upper, area):
     # Konverter fra BGR til HSV farverummet
     img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -61,13 +61,17 @@ def DetectColor(frame, lower, upper):
 
     # Mask the image to find all green areas
     mask = cv2.inRange(img_hsv, lower, upper)
+    mask = FindLargestContour(mask, area)
+    return mask
 
+
+def FindLargestContour(mask,area):
     # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
     # Hence, the underscore
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter contours by area (you can adjust the threshold)
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 3000]
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > area]
 
     if filtered_contours:
         # Get the largest contour

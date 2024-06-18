@@ -5,6 +5,7 @@ from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import *
 from src.Server.Components.EggDetection  import *
 from src.Server.Components.RobotDetection  import *
+from src.Server.Components.CourseDetection import *
 
 
 def infiniteCapture():
@@ -30,6 +31,7 @@ def infiniteCapture():
             eggs = DetectEgg(frame)
             green_area, blue_area = DetectRobot(frame)
             orange_ball = DetectOrangeBall(frame)
+            giveMeCourseFramePoints(frame)
 
             # Draw the bounding rectangle on the original image
             if green_area is not None:
