@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+from src.Server.Components.BallDetection import DetectOrangeBall
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 #script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -9,7 +10,36 @@ import numpy as np
 
 def giveMeBinaryBitch(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    return convert_to_binary(hsv)
+
+    lower_red1 = np.array([0, 100, 100])
+    upper_red1 = np.array([10, 255, 255])
+
+    lower_red2 = np.array([160, 100, 100])
+    upper_red2 = np.array([180, 255, 255])
+
+    mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+    mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+
+    mask = cv2.bitwise_or(mask1, mask2)
+
+    _, binary_image = cv2.threshold(mask, 128, 255, cv2.THRESH_BINARY)
+
+    # Subtract the orange ball
+    orange_ball = DetectOrangeBall(img)
+    binary_contour_mask = np.zeros_like(binary_image)
+    result_image = binary_image
+
+
+    if orange_ball is not None:
+        for contour in orange_ball:
+            cv2.drawContours(binary_contour_mask, [contour], -1, 255, thickness=cv2.FILLED)
+            dilation_kernel = np.ones((5, 5), np.uint8)
+            expanded_mask = cv2.dilate(binary_contour_mask, dilation_kernel, iterations=1)
+            result_image = cv2.subtract(binary_image, expanded_mask)
+
+    cv2.imshow('Result without orange ball subtraction', binary_image)
+
+    return result_image
 
 
 def detect_color(img, color_range):
@@ -19,6 +49,7 @@ def detect_color(img, color_range):
     cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
     return img, mask
 
+
 def convert_to_binary(img, threshold_value=128):
     # Konverter billedet til gråskala
     gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -26,12 +57,14 @@ def convert_to_binary(img, threshold_value=128):
     _, binary_image = cv2.threshold(gray_image, threshold_value, 255, cv2.THRESH_BINARY)
     return binary_image
 
+
 def course_coordinates(binary_image):
     white_coordinates = np.argwhere(binary_image == 255)
 
     # Print the coordinates
     for coord in white_coordinates:
         print(f"White pixel at (x, y): ({coord[1]}, {coord[0]})")
+
 
 def define_inner_frame(mask, img):
     # Finder kanterne på objekter i en mask og tegner om dem
@@ -45,6 +78,7 @@ def define_inner_frame(mask, img):
                 cv2.drawContours(img, [contour], 0, (0, 0, 255), 9)
     return img
 
+
 def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 255, 0)):
     # Tegner koordinatsystem på billedet
     height, width = img.shape[:2]
@@ -57,6 +91,7 @@ def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 2
         cv2.line(img, (0, y), (width, y), color_y, 1)
         cv2.putText(img, str(y), (width // 2, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_y, 1)
 
+
 def generate_grid(binary_image, interval):
     height, width = binary_image.shape
     print(f"Height: {height}, Width: {width}")
@@ -64,7 +99,7 @@ def generate_grid(binary_image, interval):
     for y in range(0, height):
         row = []
         for x in range(0, width):
-            cell = binary_image[y:y+interval, x:x+interval]
+            cell = binary_image[y:y + interval, x:x + interval]
             if np.any(cell == 255):
                 row.append(1)
             else:
@@ -72,10 +107,11 @@ def generate_grid(binary_image, interval):
         grid.append(row)
     return grid
 
+
 def visualize_grid(grid, interval):
     grid_height = len(grid)
     grid_width = len(grid[0])
-    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255 # Hvid baggrund
+    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255  # Hvid baggrund
 
     for y in range(grid_height):
         for x in range(grid_width):
@@ -89,6 +125,7 @@ def visualize_grid(grid, interval):
 
     return vis_img
 
+
 def visualize_grid_with_path(grid, interval=10, path=[]):
     grid_height = len(grid)
     grid_width = len(grid[0])
@@ -96,19 +133,21 @@ def visualize_grid_with_path(grid, interval=10, path=[]):
 
     for y in range(grid_height):
         for x in range(grid_width):
-            if grid[y][x] == 1: 
+            if grid[y][x] == 1:
                 vis_img[y * interval:(y + 1) * interval, x * interval:(x + 1) * interval] = (0, 0, 0)
 
     for (y, x) in path:
         cv2.circle(
-            vis_img, (x * interval + interval // 2, y * interval + interval // 2), interval*10, (0, 0, 0), 1)
-    
+            vis_img, (x * interval + interval // 2, y * interval + interval // 2), interval * 10, (0, 0, 0), 1)
+
     for x in range(0, grid_width * interval, interval):
         cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
     for y in range(0, grid_height * interval, interval):
         cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
 
     return vis_img
+
+
 '''
 # Verifikation af at billede læses korrekt
 if img is None:

@@ -7,13 +7,14 @@ from src.Server.Components.BallDetection import *
 from src.Server.Components.EggDetection import *
 from src.Server.Components.RobotDetection import *
 from src.Server.Components.DetectionMethods import *
+from src.Server.Components.CourseDetection import *
 
 #just a change to test git
 # Get the current directory where your script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Robot_from.jpg')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -32,6 +33,9 @@ else:
 
     eggs = DetectEgg(frame)
     orange_ball = DetectOrangeBall(frame)
+
+    binary = giveMeBinaryBitch(frame)
+
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
@@ -120,7 +124,7 @@ else:
         for contour in orange_ball:
             cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
-
+    cv2.imshow('Binary', binary)
     # Display the image with detected circles and contours
     cv2.imshow('Objects Detected', frame)
   #  cv2.imshow('Blobs Detected', im_with_keypoints)
