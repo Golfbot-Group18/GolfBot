@@ -37,7 +37,7 @@ drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=P
 #print(gyroControl.get_angle())
 #drive.turn_to_angle(-90, 60)
 
-drive.run(500)
+
 
 
 #rightMotor.run(-360)
@@ -48,7 +48,7 @@ drive.run(500)
 #leftMotor.stop()
 
 
-#print(gyroControl.get_angle())
+print(gyroControl.get_angle())
 
 print("ending it all")
 
@@ -58,4 +58,7 @@ print("ending it all")
 
 #robot.straight(distance=-200)
 
+ev3.speaker.set_speech_options(language='en', voice='f1')
+ev3.speaker.say("Welcome to hell")
 
+#ev3.speaker.play_notes(['F4/4#','F4/4#','D4/4#','D4/4#'])
