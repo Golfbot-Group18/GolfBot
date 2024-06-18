@@ -1,7 +1,7 @@
 import math
 import cv2
 import numpy as np
-from src.Server.Components.DetectionMethods import *
+from Components.DetectionMethods import *
 
 
 def DetectRobot(frame):

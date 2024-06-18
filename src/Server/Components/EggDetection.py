@@ -1,4 +1,4 @@
-from src.Server.Components.DetectionMethods import *
+from Components.DetectionMethods import *
 
 
 def DetectEgg(frame):

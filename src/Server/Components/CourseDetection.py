@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from scipy.spatial import KDTree
-from src.Server.Components.BallDetection import DetectOrangeBall
+from Components.BallDetection import DetectOrangeBall
 
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne

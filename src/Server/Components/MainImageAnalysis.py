@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from Components.EggDetection import DetectEgg
-from Components.BallDetection import DetectBall
+from Components.BallDetection import DetectBalls
 from Components.RobotDetection import DetectRobot
 
 def giveMeFrames():
@@ -32,7 +32,7 @@ def infiniteCapture():
             break
         else:
             #frame = CalibrateCamera(frame)
-            balls = DetectBall(frame)
+            balls = DetectBalls(frame)
             egg = DetectEgg(frame)
             robot_contour = DetectRobot(frame)
             # Draw the bounding rectangle on the original image
@@ -86,8 +86,8 @@ def infiniteCapture():
     cap.release()
     cv2.destroyAllWindows()
     return balls, egg, robot_contour
-'''
 
+'''
 def bitchImagePlease():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
@@ -149,4 +149,3 @@ def bitchImagePlease():
     
     return balls, egg, robot_contour
     '''
-    

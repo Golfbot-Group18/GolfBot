@@ -15,7 +15,7 @@ import socket
 # This program requires LEGO EV3 MicroPython v2.0 or higher.
 # Click "Open user guide" on the EV3 extension tab for more information.
 
-HOST = '172.20.10.3'
+HOST = '192.168.45.108'
 PORT = 65432
 
 def receive_vectors(host, port):
@@ -33,16 +33,22 @@ def receive_vectors(host, port):
                 break
             data += chunk
 
-        vectors = json.loads(data.decode('utf-8'))
-        print("Vectors received:".format(vectors))
-        return vectors
+        data_str = data.decode('utf-8')
+        data_json = json.loads(data_str)
+        print("Data received:".format(data_json))
+        return data_json
     finally:
         s.close()
 
 
 # getting the data
 
-received_vectors = receive_vectors(host=HOST, port=PORT)
+received_data = receive_vectors(host=HOST, port=PORT)
+robot_heading = received_data['robot_heading']
+vectors = received_data['vectors']
+
+print('Robot heading: {}'.format(robot_heading))    
+print('Vectors: {}'.format(vectors))
 
 
 # Creating the Ev3 brick
@@ -62,21 +68,21 @@ feed = Motor(Port.C)
 
 # Need a start heading
 # at the moment it is just 0 degrees real which is equal to 180
-gyroControl = GyroController(Port.S1, 180)
+gyroControl = GyroController(Port.S1, robot_heading)
 
 
 drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=Port.C, gyroController=gyroControl)
 
 counter = 0
-for distance, angle in received_vectors: 
-    print(f'Turning the amount of degrees: {angle}')
+for distance, angle in vectors: 
+    print('Turning the amount of degrees: {}'.format(angle))
     drive.turn_to_angle(target_angle=angle, speed=60)
-    print(f'Driving the distance: {distance}')
+    print('Driving the distance: {}'.format(distance))
     drive.run(distance=distance)
     counter += 1
-    print(f'Completed {counter} sets of instructions')
+    print('Completed {} sets of instructions'.format(counter))
 
-print(f'Done with all instructions received.')
+print('Done with all instructions received.')
 
 
 ev3.speaker.say("My masters are gonna kill me after this, please help")
