@@ -25,6 +25,7 @@ def receive_vectors(host, port):
         s.connect((host, port))
         print("Connected to server at {}:{}".format(host, port))
 
+        # Receive data in chunks and concatenate until the connection is closed
         data = b""
         while True:
             chunk = s.recv(4096)

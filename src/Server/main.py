@@ -13,8 +13,12 @@ from Utils.px_conversion import calculate_scale_factor_from_ball
 from Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading
 
 '''I've tried making a simple main function that will be used to run the entire program. It will first look for obstacles on the course, then wait for the user to place the robot on the course. After that, it will start the main loop where it will look for the robot and balls, calculate the path to the closest ball and then send the path to the robot using a socket connection'''
-def start_server(vectors, host='0.0.0.0', port=65432):
-    vectors_json = json.dumps(vectors)
+def start_server(vectors, robot_heading, host='0.0.0.0', port=65432):
+    data = {
+        'robot_heading': robot_heading,
+        'vectors': vectors
+    }
+    data_json = json.dumps(data)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, port))
@@ -24,7 +28,7 @@ def start_server(vectors, host='0.0.0.0', port=65432):
         conn, addr = s.accept()
         with conn:
             print(f"Connected by {addr}")
-            conn.sendall(vectors_json.encode('utf-8'))
+            conn.sendall(data_json.encode('utf-8'))
             print("Vectors sent")
 
 def look_for_obstacles():
@@ -83,7 +87,7 @@ def main():
         required_clearance = (robot_width / 2 + buffer) / max_distance * 100
         min_clearance = required_clearance
 
-        balls = DetectBall(frame)
+        balls, orange_index = DetectBall(frame)
         while balls.size == 0:
             print("No balls detected keep looking")
             frame = giveMeFrames()
@@ -141,7 +145,7 @@ def main():
         print(f"Move robot forward by {first_vector[0]} cm.")
 
         robot_heading = first_vector[1]
-
+        start_server(filtered_vectors, robot_heading)
         #cv2.imshow('Binary Course', binary_course)
         cv2.imshow('Standard Grid', grid_image)
         cv2.imshow('Clearance Grid', visualize_clearance_grid(clearance_grid, interval=10))
