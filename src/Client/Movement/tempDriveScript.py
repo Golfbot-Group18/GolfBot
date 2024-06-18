@@ -1,0 +1,61 @@
+#!/usr/bin/env pybricks-micropython
+import json
+from pybricks.hubs import EV3Brick
+import math
+from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
+                                 InfraredSensor, UltrasonicSensor, GyroSensor)
+from pybricks.parameters import Port, Stop, Direction, Button, Color
+from pybricks.tools import wait, StopWatch, DataLog
+from pybricks.robotics import DriveBase
+from pybricks.media.ev3dev import SoundFile, ImageFile
+from driveControl import Drive
+from gyroControl import GyroController
+
+import time
+import socket
+import driveExecution
+
+
+
+
+# Creating the Ev3 brick
+ev3 = EV3Brick()
+
+# Initialization beep
+ev3.speaker.beep()
+
+# initilize motor
+rightMotor = Motor(Port.A)
+leftMotor = Motor(Port.B)
+feed = Motor(Port.C)
+
+gyroControl = GyroController(Port.S1, 180)
+
+
+drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=Port.C, gyroController=gyroControl)
+
+#print(gyroControl.get_angle())
+#drive.turn_to_angle(-90, 60)
+
+drive.run(500)
+
+
+#rightMotor.run(-360)
+#leftMotor.run(-360)
+#feed.run(3600)
+#time.sleep(50)
+#rightMotor.stop()
+#leftMotor.stop()
+
+
+#print(gyroControl.get_angle())
+
+print("ending it all")
+
+#driveExecution.driveForwards(30)
+
+#robot = DriveBase(leftMotor, rightMotor, 55.5, 180)
+
+#robot.straight(distance=-200)
+
+
