@@ -6,13 +6,23 @@ import math
 def convert_path_to_real_world(path, scale_factor):
     return [(point[0] * scale_factor, point[1] * scale_factor) for point in path]
 
-'''This function calculates the distance and angle between two points. It's done by calculating the difference in x and y coordinates and then using the Pythagorean theorem to calculate the distance. The angle is calculated using the arctan2 function.'''
+'''This function calculates the distance and angle between two points. It's done by calculating the difference in x and y coordinates and then using the Pythagorean theorem to calculate the distance. The angle is calculated using the arctan2 function.
 def calculate_distance_and_angle(p1, p2):
     dx = p2[0] - p1[0]
     dy = p2[1] - p1[1]
     distance = np.sqrt(dx**2 + dy**2)
     angle = np.degrees(np.arctan2(dy, dx))
     return distance, angle
+'''
+
+def calculate_distance_and_angle(p1, p2):
+    distance = np.linalg.norm(np.array(p2) - np.array(p1))
+    angle = np.arctan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / np.pi
+    return distance, angle
+
+def calculate_angle(vector):
+    return np.arctan2(vector[1], vector[0]) * 180 / np.pi
+
 
 '''This function calculates the heading of the robot based on the base and tip points of the robot.'''
 def calculate_robot_heading(base, tip):

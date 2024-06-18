@@ -40,16 +40,54 @@ def receive_vectors(host, port):
     finally:
         s.close()
 
+def drive_distance(distance, speed=200):
+    initial_angle = gyro.angle()
 
-# getting the data
+    drive_base.reset()
+    drive_base.straight(distance)
 
-received_data = receive_vectors(host=HOST, port=PORT)
-robot_heading = received_data['robot_heading']
-vectors = received_data['vectors']
+    while drive_base.distance() < distance:
+        current_angle = gyro.angle()
+        error = current_angle - initial_angle
+        correction = error * 2 
+        
+        drive_base.drive(speed, -correction)
+        wait(10)
 
-print('Robot heading: {}'.format(robot_heading))    
-print('Vectors: {}'.format(vectors))
+    drive_base.stop()
 
+def turn_on_the_spot(degrees, speed=100):
+    target_angle = gyro.angle() + degrees
+
+    if degrees > 0:
+        drive_base.drive(0, speed)
+        while gyro.angle() < target_angle:
+            wait(10)
+    else:
+        drive_base.drive(0, -speed)
+        while gyro.angle() > target_angle:
+            wait(10)
+    
+    drive_base.stop()
+
+def execute_commands(vectors):
+    current_heading = 0
+    for vector in vectors:
+        distance_cm, new_heading = vector
+        distance_mm = distance_cm * 10
+
+        turn_angle = new_heading - current_heading
+
+        if turn_angle > 180:
+            turn_angle -= 360
+        elif turn_angle < -180:
+            turn_angle += 360
+
+        turn_on_the_spot(turn_angle)
+
+        current_heading = new_heading
+
+        drive_distance(distance_mm)
 
 # Creating the Ev3 brick
 ev3 = EV3Brick()
@@ -62,29 +100,27 @@ ev3.speaker.beep()
 
 
 # initilize motor
-rightMotor = Motor(Port.A)
-leftMotor = Motor(Port.B)
+rightMotor = Motor(Port.A, Direction.COUNTERCLOCKWISE, [24, 16])
+leftMotor = Motor(Port.B, Direction.COUNTERCLOCKWISE, [24, 16])
 feed = Motor(Port.C)
 
-# Need a start heading
-# at the moment it is just 0 degrees real which is equal to 180
-gyroControl = GyroController(Port.S1, robot_heading)
+gyro = GyroSensor(Port.S1)
+
+wheel_diameter = 55.5
+axle_track = 180
+
+drive_base = DriveBase(leftMotor, rightMotor, wheel_diameter, axle_track)
+
+gyro.reset_angle(0)
+
+#drive_distance(1000)
+
+data = receive_vectors(HOST, PORT)
+print("Data received:", data)
+vectors = data['vectors']
 
 
-drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=Port.C, gyroController=gyroControl)
-
-counter = 0
-for distance, angle in vectors: 
-    print('Turning the amount of degrees: {}'.format(angle))
-    drive.turn_to_angle(target_angle=angle, speed=60)
-    print('Driving the distance: {}'.format(distance))
-    drive.run(distance=distance)
-    counter += 1
-    print('Completed {} sets of instructions'.format(counter))
-
-print('Done with all instructions received.')
-
-
-ev3.speaker.say("My masters are gonna kill me after this, please help")
+execute_commands(vectors)
+ev3.speaker.say("I have reached the destination")
 
     

@@ -61,7 +61,7 @@ def DetectBalls(frame):
 
 
 def GetFixedBallPoints():
-    return [[[1061, 398, 14.231433], [900, 951, 14.262188]]]
+    return [[[1313 , 539, 15.52368]]]
 
 
 def is_point_in_proximity(point, tree, threshold=1.5):

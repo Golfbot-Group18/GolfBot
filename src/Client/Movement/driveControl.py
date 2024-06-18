@@ -117,6 +117,8 @@ class Drive:
 
         # Gonna do 10 degree increments 
         while(abs(angle_diff)>10):
+            current_angle = self.gyroController.get_angle()
+            print("Current angle: {}".format(current_angle))
 
             # There is a difference between the current and target angle
             # i.e. we need to figure out which way to turn 
@@ -168,7 +170,7 @@ class Drive:
                 self.right_motor.run(speed=-speed)
 
                 # I'm not factoring in how long it takes to accelerate 
-                time.sleep(1/speed)
+                time.sleep(10/speed)
 
                 self.left_motor.stop()
                 self.right_motor.stop()
@@ -184,7 +186,7 @@ class Drive:
                 self.right_motor.run(speed=speed)
 
                 # I'm not factoring in how long it takes to accelerate 
-                time.sleep(1/speed)
+                time.sleep(10/speed)
 
                 self.left_motor.stop()
                 self.right_motor.stop()
