@@ -14,7 +14,7 @@ from src.Server.Components.CourseDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Balls2.png')
+image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle8.png')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -25,6 +25,7 @@ if frame is None:
     print(f"Error: Unable to load the image from '{image_path}'.")
 else:
     new_frame = CalibrateCamera(frame)
+    cv2.imshow('Calibration', new_frame)
 
     orange = None
     balls, orange_index = DetectBalls(frame)
@@ -46,7 +47,7 @@ else:
     #box = np.int32(box)
     #cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
 
-    '''
+
     epsilon = 0.02 * cv2.arcLength(green_area, True)
     approx = cv2.approxPolyDP(green_area, epsilon, True)
     print(approx)
@@ -57,7 +58,7 @@ else:
 
     robot_heading = CalculateRobotHeading(green_area)
     print(f"Heading coordinate: {robot_heading}")
-    '''
+
 
 
     #cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
