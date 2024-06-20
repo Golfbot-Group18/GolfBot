@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from scipy.spatial import KDTree
 from Components.BallDetection import DetectOrangeBall
+from sklearn.cluster import DBSCAN
 
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
@@ -41,6 +42,60 @@ def giveMeBinaryBitch(img):
     cv2.imshow('Result without orange ball subtraction', binary_image)
 
     return result_image
+
+
+def giveMeCourseFramePoints(img):
+    result_image = giveMeBinaryBitch(img)
+    corners = cv2.goodFeaturesToTrack(result_image, maxCorners=100, qualityLevel=0.27, minDistance=10, blockSize=5,
+                                      useHarrisDetector=True)
+
+    if corners is not None:
+        corners = np.int32(corners)
+        corners = np.array([corner.ravel() for corner in corners])
+
+        # Perform DBSCAN clustering
+        clustering = DBSCAN(eps=30, min_samples=4).fit(corners)
+        labels = clustering.labels_
+
+        # Extract unique clusters
+        unique_labels = set(labels)
+
+        # Find the centroids of the clusters
+        centroids = []
+        for label in unique_labels:
+            cluster_points = corners[labels == label]
+            centroid = np.mean(cluster_points, axis=0)
+            centroids.append(centroid)
+
+        # Ensure we have exactly four points
+        # if len(centroids) != 4:
+        #    raise ValueError("Expected to find exactly four intersection points")
+
+        # Convert centroids to integer points if needed
+        centroids = np.int32(centroids)
+
+        # Now `centroids` contains the four intersection points
+        # print("Intersection Points:", centroids)
+        hull = cv2.convexHull(centroids)
+        epsilon = 0.1 * cv2.arcLength(hull, True)
+        approximated_points = cv2.approxPolyDP(hull, epsilon, True)
+
+        # Draw the corners on the result image
+        # for corner in corners:
+        #     x, y = corner.ravel()
+        #     cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
+
+        # for centroid in centroids:
+        #     x, y = centroid
+        #     cv2.circle(img, (x, y), 5, (0, 255, 0), -1)  # Red circles for centroids
+
+        # cv2.drawContours(img, [approximated_points], 0, (255, 0, 0), 2)
+        # print("Printing approximated points:", approximated_points)
+        # cv2.imshow('Result', img)
+
+        return approximated_points
+    else:
+        return None
 
 
 def detect_color(img, color_range):
