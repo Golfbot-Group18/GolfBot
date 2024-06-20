@@ -37,28 +37,31 @@ def CalculateRobotTriangle(contour):
     # If the approximation returns a list longer than 3,
     # it means that the shape is not a triangle as it has more than 3 sides
     if len(approximated_points) != 3:
-        raise ValueError("The approximated contour does not represent a triangle")
+        return None
+    # raise ValueError("The approximated contour does not represent a triangle")
+    else:
+        # Reshapes the way the data is stored
+        points = approximated_points.reshape((3, 2))
+        pt1, pt2, pt3 = points[0], points[1], points[2]
 
-    # Reshapes the way the data is stored
-    points = approximated_points.reshape((3, 2))
-    pt1, pt2, pt3 = points[0], points[1], points[2]
+        side_length_1 = euclidean_distance(pt1, pt2), (pt1, pt2)
+        side_length_2 = euclidean_distance(pt1, pt3), (pt1, pt3)
+        side_length_3 = euclidean_distance(pt2, pt3), (pt2, pt3)
 
-    side_length_1 = euclidean_distance(pt1, pt2), (pt1, pt2)
-    side_length_2 = euclidean_distance(pt1, pt3), (pt1, pt3)
-    side_length_3 = euclidean_distance(pt2, pt3), (pt2, pt3)
+        # Find the index and value of the hypotenuse (the longest side)
+        lengths = [side_length_1, side_length_2, side_length_3]
+        sorted_lengths = sorted(lengths, key=lambda x: x[0])
 
-    # Find the index and value of the hypotenuse (the longest side)
-    lengths = [side_length_1, side_length_2, side_length_3]
-    sorted_lengths = sorted(lengths, key=lambda x: x[0])
-
-    return sorted_lengths
+        return sorted_lengths
 
 
 def CalculateRobotWidth(contour):
     sorted_lengths = CalculateRobotTriangle(contour)
-    shortest_length = sorted_lengths[0]
-
-    return shortest_length[0] * 2
+    if sorted_lengths is not None and len(sorted_lengths) > 0:
+        shortest_length = sorted_lengths[0]
+        return shortest_length[0] * 2
+    else:
+        return None
 
 
 def CalculateRobotHeading(contour):

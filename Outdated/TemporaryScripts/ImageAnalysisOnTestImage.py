@@ -14,7 +14,7 @@ from src.Server.Components.CourseDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle8.png')
+image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle1.png')
 
 # image_path = os.path.join(os.getcwd(), 'Images', 'test1.jpg')
 # Load the image
@@ -48,16 +48,17 @@ else:
     #cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
 
 
-    epsilon = 0.02 * cv2.arcLength(green_area, True)
-    approx = cv2.approxPolyDP(green_area, epsilon, True)
-    print(approx)
-    cv2.drawContours(frame, [approx], 0, (0, 0, 255), 2)
+    #epsilon = 0.02 * cv2.arcLength(green_area, True)
+    #approx = cv2.approxPolyDP(green_area, epsilon, True)
+    #print(approx)
+    #cv2.drawContours(frame, [approx], 0, (0, 0, 255), 2)
 
-    robot_width = CalculateRobotWidth(green_area)
-    print(f"Robot width: {robot_width}")
-
-    robot_heading = CalculateRobotHeading(green_area)
-    print(f"Heading coordinate: {robot_heading}")
+    if green_area is not None:
+        robot_width = CalculateRobotWidth(green_area)
+        if robot_width is not None:
+            print(f"Robot width: {robot_width}")
+            robot_heading = CalculateRobotHeading(green_area)
+            print(f"Heading coordinate: {robot_heading}")
 
 
 
@@ -134,3 +135,10 @@ else:
     # cv2.imshow('Undistorted', new_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+
+    # Gyroscope drift -skrottet
+    # Ball pixel conversion - skrottet gns pixel radius og scale factor = diameter cm /diameters pixel
+    # Robot design - skrottet
+    # Homographic map was going to be used to solve height displacement and is now being used for its main purpose pixel to cm

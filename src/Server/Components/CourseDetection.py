@@ -1,9 +1,12 @@
 import os
 import cv2
 import numpy as np
+
+from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import DetectOrangeBall
 from src.Server.Components.DetectionMethods import *
 from sklearn.cluster import DBSCAN
+
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 #script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +34,6 @@ def giveMeBinaryBitch(img):
     binary_contour_mask = np.zeros_like(binary_image)
     result_image = binary_image
 
-
     if orange_ball is not None:
         for contour in orange_ball:
             cv2.drawContours(binary_contour_mask, [contour], -1, 255, thickness=cv2.FILLED)
@@ -43,14 +45,17 @@ def giveMeBinaryBitch(img):
 
     return result_image
 
+
 def PatricksCoordinates(frame):
     return None
 
 
 def giveMeCourseFramePoints(img):
+    img = CalibrateCamera(img)
     result_image = giveMeBinaryBitch(img)
 
-    corners = cv2.goodFeaturesToTrack(result_image, maxCorners=100, qualityLevel=0.27, minDistance=10, blockSize=5, useHarrisDetector=True)
+    corners = cv2.goodFeaturesToTrack(result_image, maxCorners=100, qualityLevel=0.27, minDistance=10, blockSize=5,
+                                      useHarrisDetector=True)
 
     if corners is not None:
         corners = np.int32(corners)
@@ -71,7 +76,7 @@ def giveMeCourseFramePoints(img):
             centroids.append(centroid)
 
         # Ensure we have exactly four points
-       # if len(centroids) != 4:
+        # if len(centroids) != 4:
         #    raise ValueError("Expected to find exactly four intersection points")
 
         # Convert centroids to integer points if needed
@@ -79,9 +84,11 @@ def giveMeCourseFramePoints(img):
 
         # Now `centroids` contains the four intersection points
         print("Intersection Points:", centroids)
+        hull = cv2.convexHull(centroids)
+        epsilon = 0.1 * cv2.arcLength(hull, True)
+        approximated_points = cv2.approxPolyDP(hull, epsilon, True)
 
         # Draw the corners on the result image
-        result_image_with_corners = np.copy(result_image)
         for corner in corners:
             x, y = corner.ravel()
             cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
@@ -90,11 +97,11 @@ def giveMeCourseFramePoints(img):
             x, y = centroid
             cv2.circle(img, (x, y), 5, (0, 255, 0), -1)  # Red circles for centroids
 
-        cv2.imshow('Result', result_image_with_corners)
+        cv2.drawContours(img, [approximated_points], 0, (255, 0, 0), 2)
+        print("Printing approximated points:", approximated_points)
+        cv2.imshow('Result', img)
 
     return None
-
-
 
 
 def detect_color(img, color_range):
