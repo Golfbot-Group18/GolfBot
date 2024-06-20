@@ -80,6 +80,23 @@ def giveMeCourseFramePoints(img):
         epsilon = 0.1 * cv2.arcLength(hull, True)
         approximated_points = cv2.approxPolyDP(hull, epsilon, True)
 
+        def sort_vertices(vertices):
+            vertices = vertices.reshape((4, 2))
+            sorted_vertices = sorted(vertices, key=lambda y: y[0])
+            left_points = sorted(sorted_vertices[:2], key=lambda y: y[1])
+            right_points = sorted(sorted_vertices[2:], key=lambda y: y[1])
+            return np.array([left_points[0], right_points[0], right_points[1], left_points[1]], dtype='int32')
+
+        sorted_points = sort_vertices(approximated_points)
+
+        # for i, point in enumerate(sorted_points):
+        #    cx, cy = point
+        #    cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),1)
+
+        # cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
+        # print("Printing approximated points:", sorted_points)
+        # cv2.imshow('Result', img)
+
         # Draw the corners on the result image
         # for corner in corners:
         #     x, y = corner.ravel()
@@ -93,7 +110,8 @@ def giveMeCourseFramePoints(img):
         # print("Printing approximated points:", approximated_points)
         # cv2.imshow('Result', img)
 
-        return approximated_points
+        # The returned points are: Upper left, Upper Right, Lower Right, Lower Left
+        return sorted_points
     else:
         return None
 
