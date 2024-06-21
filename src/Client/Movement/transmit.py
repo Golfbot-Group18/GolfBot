@@ -50,10 +50,12 @@ class RobotCommunicator:
 def drive_distance(distance, communicator, speed=200):
     drive_base.reset()
     while drive_base.distance() < distance:
-        heading_update = communicator.receive_data().get('heading')
-        if heading_update is not None:
-            correction = heading_update * 2  # Proportional gain, adjust as needed
-            drive_base.drive(speed, -correction)
+        # Temporarily removed the request for a current heading
+        #heading_update = communicator.receive_data().get('heading')
+        #if heading_update is not None:
+            #correction = heading_update * 2  # Proportional gain, adjust as needed
+            #drive_base.drive(speed, -correction)
+        drive_base.drive(speed=speed, turn_rate=0)
         wait(10)
     drive_base.stop()
 
