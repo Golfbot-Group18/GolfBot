@@ -2,6 +2,7 @@ import json
 import socket
 import cv2
 import matplotlib.pyplot as plt
+from communication import RobotCommunicator
 from Components.RobotDetection import *
 from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
 from Components.BallDetection import DetectBalls, GetFixedBallPoints
@@ -9,80 +10,220 @@ from Camera.Calibration import CalibrateCamera
 from Components.CourseDetection import giveMeBinaryBitch
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
 from Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
-from Utils.px_conversion import calculate_scale_factor_from_ball, camera_calculations, calculate_real_world_size
+from Utils.px_conversion import calculate_scale_factor_from_ball
 from Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading, calculate_angle
 
-
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.float32):
-            return float(obj)
-        return super(MyEncoder, self).default(obj)
+''' For this we need the 4 corner points!!! - right now they are hardcoded in the function'''
+def calculate_homography_matrix(source_points=None):
+    source_points = np.array([[336, 18], [1605, 35], [342, 955], [1606, 956]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
     
-def start_server(vectors, host='0.0.0.0', port=65432):
-    data = {
-        'vectors': vectors
-    }
-    data_json = json.dumps(data, cls=MyEncoder)
+    destination_points = np.array([[0, 0], [170, 0], [0, 125], [170, 125]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((host, port))
-        s.listen(1)
-        print(f"Server listening on {host}:{port}")
+    H, status = cv2.findHomography(source_points, destination_points)
+    H_inv = np.linalg.inv(H)
+    return H, H_inv
 
-        conn, addr = s.accept()
-        with conn:
-            print(f"Connected by {addr}")
-            conn.sendall(data_json.encode('utf-8'))
-            print("Vectors sent")
-
-def calculate_homography_matrix(undistorted_points, real_world_points):
-    #source_points = np.array([[336, 18], [1605, 35], [342, 955], [1606, 956]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
-    #destination_points = np.array([[0, 0], [170, 0], [0, 125], [170, 125]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
-
-    H, status = cv2.findHomography(undistorted_points, real_world_points)
-    print("Homography Matrix:\n", H)
-    return H
-
+'''This function is used to convert the image coordinates to real world coordinates using the homography matrix'''
 def image_to_real_world(x, y, H):
-    src_point = np.array([[x, y]], dtype=np.float32).reshape(-1, 1, 2)
-    dst_point = cv2.perspectiveTransform(src_point, H)
-    return dst_point[0][0]
+    image_point = np.array([[x, y]], dtype='float32')
+    image_point = np.array([image_point])
+    real_world_point = cv2.perspectiveTransform(image_point, H)
+    return real_world_point[0][0]
 
-def look_for_obstacles():
-    while True:
-        frame = giveMeFrames()
-        if frame is None:
-            continue
-        frame = CalibrateCamera(frame)
-        binary_course = giveMeBinaryBitch(frame)
-        standard_grid = generate_grid(binary_course, interval=1)
+'''This function is used to convert the real world coordinates to image coordinates using the homography matrix - I don't know if we need this'''
+def real_world_to_image(x, y, H_inv):
+    real_world_point = np.array([[x, y]], dtype='float32')
+    real_world_point = np.array([real_world_point])
+    image_point = cv2.perspectiveTransform(real_world_point, H_inv)
+    return image_point[0][0]
 
-        obstacle_coords = find_obstacle_coords(standard_grid)
-        obstacle_grid = create_obstacle_grid(obstacle_coords, standard_grid.shape)
-        clearance_grid, max_distance = create_clearance_grid(obstacle_grid)
-        return standard_grid, clearance_grid, max_distance
+'''This function is used to locate obstacles in a picture'''
+def look_for_obstacles(frame):
+    binary_picture = giveMeBinaryBitch(frame)
+    standard_grid = generate_grid(binary_picture, interval=1)
 
+    obstacle_coords = find_obstacle_coords(standard_grid)
+    obstacle_grid = create_obstacle_grid(obstacle_coords, standard_grid.shape)
+
+    clearance_grid, max_distance = create_clearance_grid(obstacle_grid)
+    return standard_grid, clearance_grid, max_distance
+
+'''We use this function to indicate the initial process is done'''
 def wait_for_start():
-    input("Place the robot on the course and press Enter to start...")
+    input("Initial processing done - Enter to start...")
+
+'''This function processes the initial state of the image'''
+def process_initial_state(frame):
+    standard_grid, clearance_grid, max_distance = look_for_obstacles()
+    #we also need to place the egg on the course
+
+    #we also need to find the points for the 4 corners of the course
+    H, H_inv = calculate_homography_matrix()
+    return standard_grid, clearance_grid, max_distance, H, H_inv
+
+'''A function to return robot position (center point), heading(relative to itself) and a list of all ball positions'''
+def detect_robot_and_balls(frame):
+    robot_position, robot_heading = Return_heading_position()
+    ball_positions, orange_ball_index = DetectBalls(frame),
+    return robot_position, robot_heading, ball_positions, orange_ball_index
+
+def calculate_radial_distance(robot_x, robot_y, camera_center_x=540, camera_center_y=960, camera_height=100, robot_height=10):
+    x_diff = robot_x - camera_center_x
+    y_diff = robot_y - camera_center_y
+    
+    r = math.sqrt(x_diff**2 + y_diff**2)
+    
+    delta_f = camera_height - robot_height
+    
+    correction_factor = delta_f / camera_height
+    
+    corrected_r = r * correction_factor
+    
+    if r != 0:
+        corrected_x = camera_center_x + (x_diff / r) * corrected_r
+        corrected_y = camera_center_y + (y_diff / r) * corrected_r
+    else:
+        corrected_x = camera_center_x
+        corrected_y = camera_center_y
+    
+    return corrected_x, corrected_y
 
 def main():
+    frame = giveMeFrames()
+    standard_grid, clearance_grid, max_distance, H, H_inv, = process_initial_state(frame)
+    robot_width = 1  # side_lengths[0][0] * 2
+    buffer = 0
+    required_clearance = (robot_width / 2 + buffer) / max_distance * 100
+    min_clearance = required_clearance
+    wait_for_start()
 
-    pixel_width, pixel_height, sensor_width, sensor_height, focal_length = camera_calculations()
-    object_width_real = 3  # in cm
-    object_height_real = 8.5  # in cm
+    communicator = RobotCommunicator(robot_ip='0.0.0.0', robot_port=12345, server_ip='0.0.0.0', server_port=12346)
+    communicator.connect_to_robot()
+    communicator.listen_for_confirmation()
+    if communicator.connection is None:
+        print("Could not connect to robot")
+        ## need better error handling here
+        return
+        
 
-    # Measured size in pixels in the image
-    object_width_pixels = 1700  # example value
-    object_height_pixels = 1250  # example value
+    while True:
+        image = giveMeFrames()
+        robot_position, robot_heading, ball_positions, orange_ball_index = detect_robot_and_balls(image)
+        print(f"Robot position (center point): {robot_position}    Robot heading (in degrees): {robot_heading}    Ball positions: {ball_positions}")
 
-    # Distance from the camera to the object
-    distance_to_object = 159
+        if robot_position or robot_heading is None:
+            print("No robot detected keep looking")
+            continue
+        robot_position = calculate_radial_distance(robot_position[0], robot_position[1]) #we get this in x, y format
+        if ball_positions is None:
+            print("No balls detected keep looking")
+            continue
+        
+        if orange_ball_index is not None:
+            closest_ball = ball_positions[orange_ball_index]
+            print(f"Closest ball is the orange ball at position: {closest_ball}")
+        else:
+            closest_ball = min(ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_position)))
+            print(f"Closest ball is the ball at position: {closest_ball}")
 
-    object_width_calculated = calculate_real_world_size(object_width_pixels, sensor_width, focal_length, distance_to_object, pixel_width)
-    object_height_calculated = calculate_real_world_size(object_height_pixels, sensor_height, focal_length, distance_to_object, pixel_height)
+        path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball, min_clearance)
 
-    print(f"Calculated Object Size - Width: {object_width_calculated:.2f} cm, Height: {object_height_calculated:.2f} cm")
+        if path is None:
+            print("No valid path found to closest ball, keep looking.") 
+            #better error handling here - not implemented the functions for edge balls either.
+            continue
+        
+        path_cm = [image_to_real_world(p[1], p[0], H) for p in path]
+        print(f"Path in cm: {path_cm}")
+
+        vectors = generate_vectors_from_path(path_cm)
+
+        relative_vectors = [(distance, (angle - robot_heading) % 360) for distance, angle in vectors]
+        filtered_vectors = filter_vectors(relative_vectors)
+        print(f"Filtered vectors: {filtered_vectors}")
+
+        if filtered_vectors:
+            print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
+            communicator.send_data(robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
+
+            while True:
+                image = giveMeFrames()
+                robot_position, robot_heading, _ = detect_robot_and_balls(image)
+                robot_position = calculate_radial_distance(robot_position[0], robot_position[1]) #we get this in x, y format
+                print(f'Robot position: {robot_position}    Robot heading: {robot_heading}')
+
+                send_heading_to_robot(communicator, robot_heading)
+
+                confirmation = communicator.receive_confirmation()
+                print(f"Confirmation from robot: {confirmation}")
+
+                if confirmation == "reached":
+
+                    if np.linalg.norm(np.array(robot_position) - np.array(closest_ball)) < 10:
+                        print("Robot reached the ball.")
+                        break
+
+                    path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball, 0)
+                    if path is None:
+                        print("No valid path found, keep looking.")
+                        break
+
+                    path_cm = [image_to_real_world(p[1], p[0], H) for p in path]
+                    vectors = generate_vectors_from_path(path_cm)
+                    relative_vectors = [(distance, (angle - robot_heading) % 360) for distance, angle in vectors]
+                    filtered_vectors = filter_vectors(relative_vectors)
+
+                    if filtered_vectors:
+                        communicator.send_data(robot_position, robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
+                    else:
+                        print("Filtered vectors are empty, keep looking.")
+                        break
+
+def send_heading_to_robot(communicator, current_heading):
+    communicator.send_data(current_heading=current_heading)
+                
+
+
+
+
+
+
+
+        
+
+
+    ##First we need to process the initial state of the course
+    ##This includes finding the obstacles and generating the grid
+    ## We'll also need to calculate the homography matrix
+    ## We'll make a function for this - process_initial_state()
+
+    ##Then we'll wait for the user to press enter - this indicates that the initial state has been processed
+
+    ##Then we'll start the main loop
+    ##In the main loop we'll look for the robot and the balls
+    ##We'll calculate the heading of the robot
+    ##We'll calculate the path to the closest ball
+    ##We'll convert the path to vectors and filter them to get the most important ones
+    ##if the path contains multiple vectors, we'll send the first one to the robot
+        ##Here we start a new loop
+        ## In this loop we'll constantly update the robot with it's current heading
+        # We'll listen for the robot to confirm that it has reached the first waypoint
+            # Here we'll check if it indeed has reached the first waypoint
+        ## When the robot reaches the first waypoint, we'll calculate the path again
+        ## We'll convert the new path and convert it to vectors and send the first one to the robot
+        ## We'll keep doing this until the robot reaches the ball
+        ## (When the robot reaches the ball, it itself will initiate a protocol to pick up the ball)
+        ## This loop will break when the robot reaches the goal position
+    ##When the robot reaches the goal position, we'll start the main loop again
+
+    
+
+if __name__ == "__main__":
+    main()
+
+'''
+def main():
+
     H, H_inv = calculate_homography_matrix()
     standard_grid, clearance_grid, max_distance = look_for_obstacles()
     grid_image = visualize_grid(standard_grid, interval=10)
@@ -186,7 +327,7 @@ def main():
     start_server(filtered_vectors_real)
     cv2.destroyAllWindows()
 
-
+'''
 
 '''I've tried making a simple main function that will be used to run the entire program. It will first look for obstacles on the course, then wait for the user to place the robot on the course. After that, it will start the main loop where it will look for the robot and balls, calculate the path to the closest ball and then send the path to the robot using a socket connection'''
 '''
@@ -418,7 +559,6 @@ def main():
     cv2.imshow('Standard Grid', grid_image)
     cv2.imshow('Clearance Grid', visualize_clearance_grid(clearance_grid, interval=10))
     cv2.destroyAllWindows()
+    
 '''
-if __name__ == "__main__":
-    main()
 

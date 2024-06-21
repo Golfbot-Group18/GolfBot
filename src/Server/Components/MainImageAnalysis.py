@@ -3,6 +3,7 @@ import numpy as np
 from Components.EggDetection import DetectEgg
 from Components.BallDetection import DetectBalls
 from Components.RobotDetection import DetectRobot
+from Camera.Calibration import CalibrateCamera
 
 def giveMeFrames():
     cap = cv2.VideoCapture(0)
@@ -10,7 +11,7 @@ def giveMeFrames():
     if not ret:
         print("Error: Unable to capture frame.")
     else:
-        return frame
+        return CalibrateCamera(frame)
 
 
 def infiniteCapture():

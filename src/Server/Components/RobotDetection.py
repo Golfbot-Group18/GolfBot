@@ -89,3 +89,12 @@ def CalculateRobotHeading(contour):
         raise ValueError("Could not find overlapping point")
 
     return starting_point, overlapping_point
+
+def Return_heading_position(frame):
+    robot_contour = DetectRobot(frame)
+    robot_position_points = CalculateRobotHeading(robot_contour)
+    robot_position = np.array(robot_position_points[0], dtype=int)
+    robot_heading_vector = (robot_position_points[0][0] - robot_position_points[0][1], robot_position_points[1][0] - robot_position_points[1][1])
+    robot_heading= np.arctan2(robot_heading_vector[1], robot_heading_vector[0]) * 180 / np.pi
+    
+    return robot_position, robot_heading

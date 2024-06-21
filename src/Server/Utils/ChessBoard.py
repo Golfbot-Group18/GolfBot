@@ -4,6 +4,9 @@ import os
 import cv2
 import numpy as np
 
+def shift_points(object_pts, shift_x, shift_y):
+    return object_pts + np.array([shift_x, shift_y, 0])
+
 #Some taken from calibration script which comes from a youtuber and opencv
 def something():
     chessboard_size = (9, 6)
@@ -18,13 +21,15 @@ def something():
     imgpoints = []  # 2d points in image plane
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    image_path1 = os.path.join(script_dir, '..', 'Images', 'Court2.png')
-    image_path2 = os.path.join(script_dir, '..', 'Images', 'Court3.png')
-    image_path3 = os.path.join(script_dir, '..', 'Images', 'Court4.png')
-    image_path4 = os.path.join(script_dir, '..', 'Images', 'Court1.png')
+    image_path1 = os.path.join(script_dir, 'Images', 'Court2.png')
+    image_path2 = os.path.join(script_dir, 'Images', 'Court3.png')
+    image_path3 = os.path.join(script_dir, 'Images', 'Court4.png')
+    image_path4 = os.path.join(script_dir, 'Images', 'Court1.png')
 
     images = [image_path1, image_path2, image_path3, image_path4]
-
+    if len(images) == 0:
+        raise ValueError("No images found in the specified directory")
+    count = 5
     for image in images:
 
         img = cv2.imread(image)
@@ -35,10 +40,9 @@ def something():
 
         # If found, add object points, image points (after refining them)
         if ret == True:
-            objpoints.append(objp)
             corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
             imgpoints.append(corners)
-
+            objpoints.append(objp)
             # Draw and display the corners
             cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
             cv2.imshow('img', img)
@@ -55,7 +59,4 @@ def something():
     print("Printing Image Points")
     print(imgpoints)
 
-
-
-if __name__ == "__main__":
-    something()
+    return objpoints, imgpoints
