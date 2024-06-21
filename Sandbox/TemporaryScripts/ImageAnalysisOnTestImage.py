@@ -24,7 +24,7 @@ def ImageAnalysisOnTestImage(image_path):
 
 def ImageAnalysis(frame):
     new_frame = CalibrateCamera(frame)
-    cv2.imshow('Calibration', new_frame)
+    # cv2.imshow('Calibration', new_frame)
 
     orange = None
     balls, orange_index = DetectBalls(frame)
@@ -119,6 +119,7 @@ def ImageAnalysis(frame):
     if orange_ball is not None:
         for contour in orange_ball:
             cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
+
 
     cv2.imshow('Binary', binary)
     # Display the image with detected circles and contours

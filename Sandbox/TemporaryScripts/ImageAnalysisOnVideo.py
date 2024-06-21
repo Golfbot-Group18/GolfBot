@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from Outdated.TemporaryScripts.ImageAnalysisOnTestImage import ImageAnalysis
+from Sandbox.TemporaryScripts.ImageAnalysisOnTestImage import ImageAnalysis
 from src.Server.Components.RobotDetection import *
 
 

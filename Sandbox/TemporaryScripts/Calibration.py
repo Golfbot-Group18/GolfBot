@@ -29,7 +29,7 @@ objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
 
-images = glob.glob('/Users/davidrivera/Documents/GitHub/GolfBot.Group18/Outdated/TemporaryScripts/*.png')
+images = glob.glob('/Sandbox/TemporaryScripts/*.png')
 
 for image in images:
 

@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 
-from Outdated.TemporaryScripts.ImageAnalysisOnTestImage import ImageAnalysisOnTestImage
-from Outdated.TemporaryScripts.ImageAnalysisOnVideo import ImageAnalysisOnVideo
+from Sandbox.TemporaryScripts.ImageAnalysisOnTestImage import ImageAnalysisOnTestImage
+from Sandbox.TemporaryScripts.ImageAnalysisOnVideo import ImageAnalysisOnVideo
 from src.Server.Components.CourseDetection import *
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

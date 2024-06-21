@@ -49,7 +49,11 @@ def OldDetectOrangeBall(frame):
 
 def DetectOrangeBall(frame):
     lower_orange = np.array([5, 100, 100])
-    upper_orange = np.array([15, 255, 255])
+    upper_orange = np.array([25, 255, 255])
+
+    #lower_orange = np.array([5, 100, 100])
+    #upper_orange = np.array([28, 255, 255])
+
     min_area = 300
     max_area = 1000  # Adjust based on your specific case
 
