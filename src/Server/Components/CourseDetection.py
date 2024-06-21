@@ -112,8 +112,8 @@ def giveMeCourseFramePoints(img):
                 cx, cy = point
                 cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),1)
 
-        cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
-        print("Printing approximated points:", sorted_points)
+            cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
+            print("Printing approximated points:", sorted_points)
         cv2.imshow('Result', img)
 
     return None
