@@ -13,7 +13,7 @@ def calculate_scale_factor_from_ball(diameter_real_cm, ball_data):
 
 
 # To account for the height displacement of the robot, all in cm
-def realCoordinates (robotHeight: float, cameraHeight: float, robotCoordinates):
+def realCoordinates (robotHeight_cm: float, cameraHeight_cm: float, robotCoordinates):
     #I'm at the moment assuming that directly beneath the camera is the center of the 
     # grid. This should always be the case if the camera is level. 
     cameraCoordinates = (960,540)
@@ -29,16 +29,16 @@ def realCoordinates (robotHeight: float, cameraHeight: float, robotCoordinates):
     if r != 0: 
 
 
-        delta_f = cameraHeight-robotHeight
+        delta_f_cm = cameraHeight_cm-robotHeight_cm
 
-        correction_factor = delta_f/cameraHeight
+        correction_factor = delta_f_cm/cameraHeight_cm
         #print(f'correction_factor: {correction_factor}')
 
-        corrected_r = r*correction_factor
+        corrected_r = r * correction_factor
         #print(f'corrected_r: {corrected_r}')
 
-        corrected_x = cameraCoordinates[0]+(x_diff/r)*correction_factor
-        corrected_y = cameraCoordinates[1]+(y_diff/r)*correction_factor
+        corrected_x = cameraCoordinates[0]+(x_diff/r)*corrected_r
+        corrected_y = cameraCoordinates[1]+(y_diff/r)*corrected_r
 
         #print(f'correctionValue_x: {(x_diff/r)*correction_factor}')
         #print(f'correctionValue_y: {(y_diff/r)*correction_factor}')

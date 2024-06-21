@@ -2,22 +2,23 @@ import json
 import socket
 import cv2
 import matplotlib.pyplot as plt
-from communication import RobotCommunicator
+from Components.Communication_module import RobotCommunicator
 from Components.RobotDetection import *
 from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
 from Components.BallDetection import DetectBalls, GetFixedBallPoints
 from Camera.Calibration import CalibrateCamera
-from Components.CourseDetection import giveMeBinaryBitch
+from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
 from Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
-from Utils.px_conversion import calculate_scale_factor_from_ball
+from Utils.px_conversion import realCoordinates
 from Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading, calculate_angle
 
 ''' For this we need the 4 corner points!!! - right now they are hardcoded in the function'''
 def calculate_homography_matrix(source_points=None):
-    source_points = np.array([[336, 18], [1605, 35], [342, 955], [1606, 956]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
-    
-    destination_points = np.array([[0, 0], [170, 0], [0, 125], [170, 125]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
+    print(f"Source points: {source_points}")
+    #source_points = np.array([[336, 18], [1605, 35], [342, 955], [1606, 956]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
+    source_points = np.array(source_points, dtype=np.float32)
+    destination_points = np.array([[0, 0], [170, 0], [170, 125], [0, 125]], dtype=np.float32) # THESE ARE WRITTEN IN x,y FORMAT
 
     H, status = cv2.findHomography(source_points, destination_points)
     H_inv = np.linalg.inv(H)
@@ -54,83 +55,79 @@ def wait_for_start():
 
 '''This function processes the initial state of the image'''
 def process_initial_state(frame):
-    standard_grid, clearance_grid, max_distance = look_for_obstacles()
+    standard_grid, clearance_grid, max_distance = look_for_obstacles(frame)
     #we also need to place the egg on the course
-
+    source_points = giveMeCourseFramePoints(frame)
     #we also need to find the points for the 4 corners of the course
-    H, H_inv = calculate_homography_matrix()
+    H, H_inv = calculate_homography_matrix(source_points)
     return standard_grid, clearance_grid, max_distance, H, H_inv
 
 '''A function to return robot position (center point), heading(relative to itself) and a list of all ball positions'''
 def detect_robot_and_balls(frame):
-    robot_position, robot_heading = Return_heading_position()
-    ball_positions, orange_ball_index = DetectBalls(frame),
-    return robot_position, robot_heading, ball_positions, orange_ball_index
-
-def calculate_radial_distance(robot_x, robot_y, camera_center_x=540, camera_center_y=960, camera_height=100, robot_height=10):
-    x_diff = robot_x - camera_center_x
-    y_diff = robot_y - camera_center_y
-    
-    r = math.sqrt(x_diff**2 + y_diff**2)
-    
-    delta_f = camera_height - robot_height
-    
-    correction_factor = delta_f / camera_height
-    
-    corrected_r = r * correction_factor
-    
-    if r != 0:
-        corrected_x = camera_center_x + (x_diff / r) * corrected_r
-        corrected_y = camera_center_y + (y_diff / r) * corrected_r
+    robot_position, robot_heading = Return_heading_position(frame)
+    balls_result = DetectBalls(frame)
+    if len(balls_result) == 2:
+        ball_positions, orange_ball_index = balls_result
     else:
-        corrected_x = camera_center_x
-        corrected_y = camera_center_y
-    
-    return corrected_x, corrected_y
+        ball_positions = balls_result[0]
+        orange_ball_index = None
+    return robot_position, robot_heading, ball_positions, orange_ball_index
 
 def main():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance, H, H_inv, = process_initial_state(frame)
-    robot_width = 1  # side_lengths[0][0] * 2
+
+    robot_width = 1
     buffer = 0
     required_clearance = (robot_width / 2 + buffer) / max_distance * 100
     min_clearance = required_clearance
+
+    robot_height_cm = 21.8
+    camera_height_cm = 165
+
     wait_for_start()
 
-    communicator = RobotCommunicator(robot_ip='0.0.0.0', robot_port=12345, server_ip='0.0.0.0', server_port=12346)
-    communicator.connect_to_robot()
+    communicator = RobotCommunicator(server_ip='0.0.0.0', server_port=12345, confirmation_port=12346)
+    communicator.listen_for_robot()
     communicator.listen_for_confirmation()
-    if communicator.connection is None:
-        print("Could not connect to robot")
-        ## need better error handling here
-        return
-        
 
     while True:
         image = giveMeFrames()
         robot_position, robot_heading, ball_positions, orange_ball_index = detect_robot_and_balls(image)
         print(f"Robot position (center point): {robot_position}    Robot heading (in degrees): {robot_heading}    Ball positions: {ball_positions}")
 
-        if robot_position or robot_heading is None:
+        if robot_position is None:
             print("No robot detected keep looking")
             continue
-        robot_position = calculate_radial_distance(robot_position[0], robot_position[1]) #we get this in x, y format
+
+        robot_position = realCoordinates(robot_height_cm, camera_height_cm, robot_position)
+        robot_position = (int(robot_position[0]), int(robot_position[1]))
+
+        print(f"Robot true position: {robot_position}")
+
         if ball_positions is None:
             print("No balls detected keep looking")
             continue
         
-        if orange_ball_index is not None:
-            closest_ball = ball_positions[orange_ball_index]
-            print(f"Closest ball is the orange ball at position: {closest_ball}")
-        else:
-            closest_ball = min(ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_position)))
-            print(f"Closest ball is the ball at position: {closest_ball}")
+        flattened_ball_positions = [(float(ball[0]), float(ball[1])) for ball_array in ball_positions for ball in ball_array]
+        
+        for position in flattened_ball_positions:
+            print(f"Ball position: {position}")
+            print(f"Robot position: {robot_position}")
 
-        path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball, min_clearance)
+        
+        if orange_ball_index is not None:
+            closest_ball_position = flattened_ball_positions[orange_ball_index]
+            print(f"Closest ball is the orange ball at position: {closest_ball_position}")
+        else:
+            closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_position)))
+            print(f"Closest ball is the ball at position: {closest_ball_position}")
+
+        path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball_position, min_clearance)
 
         if path is None:
             print("No valid path found to closest ball, keep looking.") 
-            #better error handling here - not implemented the functions for edge balls either.
+            #better error handling here - not implemented the functions for edge balls either - will do later.
             continue
         
         path_cm = [image_to_real_world(p[1], p[0], H) for p in path]
@@ -148,22 +145,26 @@ def main():
 
             while True:
                 image = giveMeFrames()
-                robot_position, robot_heading, _ = detect_robot_and_balls(image)
-                robot_position = calculate_radial_distance(robot_position[0], robot_position[1]) #we get this in x, y format
+                robot_position, robot_heading, _ , _ = detect_robot_and_balls(image)
+
+                robot_position = realCoordinates(robot_height_cm, camera_height_cm, robot_position)
+                robot_position = (int(robot_position[0]), int(robot_position[1]))
+                
                 print(f'Robot position: {robot_position}    Robot heading: {robot_heading}')
 
                 send_heading_to_robot(communicator, robot_heading)
 
                 confirmation = communicator.receive_confirmation()
+                confirmation = "reached"
                 print(f"Confirmation from robot: {confirmation}")
 
                 if confirmation == "reached":
 
-                    if np.linalg.norm(np.array(robot_position) - np.array(closest_ball)) < 10:
+                    if np.linalg.norm(np.array(robot_position) - np.array(closest_ball_position)) < 10:
                         print("Robot reached the ball.")
                         break
 
-                    path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball, 0)
+                    path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball_position, 0)
                     if path is None:
                         print("No valid path found, keep looking.")
                         break
@@ -173,17 +174,15 @@ def main():
                     relative_vectors = [(distance, (angle - robot_heading) % 360) for distance, angle in vectors]
                     filtered_vectors = filter_vectors(relative_vectors)
 
-                    if filtered_vectors:
+                    if filtered_vectors:    
+                        print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
                         communicator.send_data(robot_position, robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
                     else:
                         print("Filtered vectors are empty, keep looking.")
                         break
 
 def send_heading_to_robot(communicator, current_heading):
-    communicator.send_data(current_heading=current_heading)
-                
-
-
+    communicator.update_heading(current_heading=current_heading)
 
 
 

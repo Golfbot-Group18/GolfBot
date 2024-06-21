@@ -56,7 +56,7 @@ def DetectBalls(frame):
     #sorted_balls = list(all_balls)
     #sorted_balls.insert(0, sorted_balls.pop(actual_orange_ball))
     #sorted_balls = tuple(sorted_balls)
-
+    print(f"Balls found: {all_balls}, orange ball value:  {actual_orange_ball}")
     return all_balls, actual_orange_ball
 
 
