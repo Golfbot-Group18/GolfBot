@@ -22,7 +22,7 @@ def euclidean_distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def CalculateRobotTriangle(contour):
+def CalculateRobotTriangle(contour): # <-returns nonetype
     # This function only works for a right-angled triangle on the robot
     # with precisely half the width of it in the middle
 
@@ -64,7 +64,7 @@ def CalculateRobotWidth(contour):
         return None
 
 
-def CalculateRobotHeading(contour):
+def CalculateRobotHeading(contour): # <-returns nonetype
     # Returns coordinates for tip of the robot
     sorted_lengths = CalculateRobotTriangle(contour)
     # side_length_1 = sorted_lengths[0]
@@ -82,6 +82,12 @@ def CalculateRobotHeading(contour):
         overlapping_point = pt2
     # Make it return the other point from side a so that we have a direction
     return overlapping_point
+
+
+  # Robot returns noneType and not None
+  # Put egg in grid
+  # look at ball refinement
+  # orange ball not found
 
 
 """""

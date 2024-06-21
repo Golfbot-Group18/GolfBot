@@ -18,10 +18,10 @@ def something():
     imgpoints = []  # 2d points in image plane
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    image_path1 = os.path.join(script_dir, '..', 'Images', 'Court2.png')
-    image_path2 = os.path.join(script_dir, '..', 'Images', 'Court3.png')
+    image_path1 = os.path.join(script_dir, '..', 'Images', 'Refiner2.png')
+    image_path2 = os.path.join(script_dir, '..', 'Images', 'Refiner3.png')
     image_path3 = os.path.join(script_dir, '..', 'Images', 'Court4.png')
-    image_path4 = os.path.join(script_dir, '..', 'Images', 'Court1.png')
+    image_path4 = os.path.join(script_dir, '..', 'Images', 'Refiner1.png')
 
     images = [image_path1, image_path2, image_path3, image_path4]
 
