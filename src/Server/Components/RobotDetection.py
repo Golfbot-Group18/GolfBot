@@ -90,11 +90,16 @@ def CalculateRobotHeading(contour):
 
     return starting_point, overlapping_point
 
-def Return_heading_position(frame):
+def Return_robot_position(frame):
     robot_contour = DetectRobot(frame)
     robot_position_points = CalculateRobotHeading(robot_contour)
-    robot_position = np.array(robot_position_points[0], dtype=int)
-    robot_heading_vector = (robot_position_points[0][0] - robot_position_points[0][1], robot_position_points[1][0] - robot_position_points[1][1])
-    robot_heading= np.arctan2(robot_heading_vector[1], robot_heading_vector[0]) * 180 / np.pi
+    robot_base_position = np.array(robot_position_points[0], dtype=int)
+    robot_tip_position = np.array(robot_position_points[1], dtype=int)
+
+    return robot_base_position, robot_tip_position
+
+def Return_robot_heading(robot_base, robot_tip):
+    robot_heading_vector = (robot_base[0] - robot_tip[0], robot_base[1] - robot_tip[1])
+    robot_heading = np.arctan2(robot_heading_vector[1], robot_heading_vector[0]) * 180 / np.pi
     
-    return robot_position, robot_heading
+    return robot_heading

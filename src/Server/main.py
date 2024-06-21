@@ -64,18 +64,29 @@ def process_initial_state(frame):
 
 '''A function to return robot position (center point), heading(relative to itself) and a list of all ball positions'''
 def detect_robot_and_balls(frame):
-    robot_position, robot_heading = Return_heading_position(frame)
+    robot_base_position, robot_tip_position = Return_robot_position(frame)
     balls_result = DetectBalls(frame)
     if len(balls_result) == 2:
         ball_positions, orange_ball_index = balls_result
     else:
         ball_positions = balls_result[0]
         orange_ball_index = None
-    return robot_position, robot_heading, ball_positions, orange_ball_index
+    return robot_base_position, robot_tip_position, ball_positions, orange_ball_index
+
+def normalize_angle(angle):
+    """Normalize angle to be within the -180 to 180 degree range."""
+    while angle > 180:
+        angle -= 360
+    while angle < -180:
+        angle += 360
+    return angle
 
 def main():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance, H, H_inv, = process_initial_state(frame)
+
+    grid_img = visualize_grid(standard_grid, interval=10)
+    clearance_grid_img = visualize_clearance_grid(clearance_grid, interval=10)
 
     robot_width = 1
     buffer = 0
@@ -93,17 +104,28 @@ def main():
 
     while True:
         image = giveMeFrames()
-        robot_position, robot_heading, ball_positions, orange_ball_index = detect_robot_and_balls(image)
-        print(f"Robot position (center point): {robot_position}    Robot heading (in degrees): {robot_heading}    Ball positions: {ball_positions}")
+        robot_base_position, robot_tip_position, ball_positions, orange_ball_index = detect_robot_and_balls(image)
+        print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
 
-        if robot_position is None:
+        if robot_base_position is None:
             print("No robot detected keep looking")
             continue
 
-        robot_position = realCoordinates(robot_height_cm, camera_height_cm, robot_position)
-        robot_position = (int(robot_position[0]), int(robot_position[1]))
+        robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
+        robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
 
-        print(f"Robot true position: {robot_position}")
+        robot_base_img = (int(robot_base_position[0] * 10), int(robot_base_position[1] * 10))
+        cv2.circle(grid_img, robot_base_img, 20, (255, 0, 0), 50) # Blue
+
+        robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
+        robot_tip_position = (int(robot_tip_position[0]), int(robot_tip_position[1]))
+
+        robot_tip_img = (int(robot_tip_position[0] * 10), int(robot_tip_position[1] * 10))
+        cv2.circle(grid_img, robot_tip_img, 20, (0, 255, 0), 50) # Green
+
+        robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
+
+        print(f'True robot position (center point): {robot_base_position}    True robot tip point: {robot_tip_position} True robot heading: {robot_heading}')
 
         if ball_positions is None:
             print("No balls detected keep looking")
@@ -111,19 +133,17 @@ def main():
         
         flattened_ball_positions = [(float(ball[0]), float(ball[1])) for ball_array in ball_positions for ball in ball_array]
         
-        for position in flattened_ball_positions:
-            print(f"Ball position: {position}")
-            print(f"Robot position: {robot_position}")
-
-        
         if orange_ball_index is not None:
             closest_ball_position = flattened_ball_positions[orange_ball_index]
             print(f"Closest ball is the orange ball at position: {closest_ball_position}")
         else:
-            closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_position)))
+            closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
-        path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball_position, min_clearance)
+        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, closest_ball_position, min_clearance)
+        for point in path:
+            center = (int(point[0] * 10), int(point[1] * 10))
+            cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
 
         if path is None:
             print("No valid path found to closest ball, keep looking.") 
@@ -135,7 +155,7 @@ def main():
 
         vectors = generate_vectors_from_path(path_cm)
 
-        relative_vectors = [(distance, (angle - robot_heading) % 360) for distance, angle in vectors]
+        relative_vectors = [(distance, normalize_angle(angle - robot_heading)) for distance, angle in vectors]
         filtered_vectors = filter_vectors(relative_vectors)
         print(f"Filtered vectors: {filtered_vectors}")
 
@@ -145,26 +165,32 @@ def main():
 
             while True:
                 image = giveMeFrames()
-                robot_position, robot_heading, _ , _ = detect_robot_and_balls(image)
+                robot_base_position, robot_tip_position, _ , _ = detect_robot_and_balls(image)
 
-                robot_position = realCoordinates(robot_height_cm, camera_height_cm, robot_position)
-                robot_position = (int(robot_position[0]), int(robot_position[1]))
+                robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
+                robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
+
+                robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
                 
-                print(f'Robot position: {robot_position}    Robot heading: {robot_heading}')
+                print(f'Robot position: {robot_base_position}    Robot heading: {robot_heading}')
 
                 send_heading_to_robot(communicator, robot_heading)
 
+                cv2.imshow('Standard Grid', grid_img)
+                cv2.imshow('Clearance Grid', clearance_grid_img)    
+                cv2.waitKey(0)
+                
                 confirmation = communicator.receive_confirmation()
                 confirmation = "reached"
                 print(f"Confirmation from robot: {confirmation}")
 
                 if confirmation == "reached":
 
-                    if np.linalg.norm(np.array(robot_position) - np.array(closest_ball_position)) < 10:
+                    if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
                         print("Robot reached the ball.")
                         break
 
-                    path = a_star_fms_search(standard_grid, clearance_grid, robot_position, closest_ball_position, 0)
+                    path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, closest_ball_position, 0)
                     if path is None:
                         print("No valid path found, keep looking.")
                         break
@@ -176,7 +202,7 @@ def main():
 
                     if filtered_vectors:    
                         print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
-                        communicator.send_data(robot_position, robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
+                        communicator.send_data(robot_base_position, robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
                     else:
                         print("Filtered vectors are empty, keep looking.")
                         break
