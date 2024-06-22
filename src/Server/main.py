@@ -87,6 +87,9 @@ def main():
 
     grid_img = visualize_grid(standard_grid, interval=10)
     clearance_grid_img = visualize_clearance_grid(clearance_grid, interval=10)
+    #cv2.imshow('Standard Grid', grid_img)
+    #cv2.imshow('Clearance Grid', clearance_grid_img)    
+    #cv2.waitKey(0)
 
     robot_width = 1
     buffer = 0
@@ -111,8 +114,8 @@ def main():
             print("No robot detected keep looking")
             continue
 
-        robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
-        robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
+        robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position) # this returns in format (x, y)
+        robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1])) # this returns in format (x, y)
 
         robot_base_img = (int(robot_base_position[0] * 10), int(robot_base_position[1] * 10))
         cv2.circle(grid_img, robot_base_img, 20, (255, 0, 0), 50) # Blue
@@ -131,7 +134,7 @@ def main():
             print("No balls detected keep looking")
             continue
         
-        flattened_ball_positions = [(float(ball[0]), float(ball[1])) for ball_array in ball_positions for ball in ball_array]
+        flattened_ball_positions = [(int(ball[0]), int(ball[1])) for ball_array in ball_positions for ball in ball_array]
         
         if orange_ball_index is not None:
             closest_ball_position = flattened_ball_positions[orange_ball_index]
@@ -140,9 +143,12 @@ def main():
             closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
-        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, closest_ball_position, min_clearance)
+        closest_ball_updated_position = (closest_ball_position[1], closest_ball_position[0]) # this is in format (y, x)
+        cv2.circle(grid_img, (closest_ball_updated_position[1] * 10, closest_ball_updated_position[0] * 10), 20, (255, 0, 0), 50) # Blue
+        robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
+        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
         for point in path:
-            center = (int(point[0] * 10), int(point[1] * 10))
+            center = (int(point[1] * 10), int(point[0] * 10))
             cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
 
         if path is None:
@@ -159,6 +165,8 @@ def main():
         filtered_vectors = filter_vectors(relative_vectors)
         print(f"Filtered vectors: {filtered_vectors}")
 
+        cv2.imshow('Standard Grid', grid_img)
+        cv2.waitKey(0)
         if filtered_vectors:
             print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
             communicator.send_data(robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
