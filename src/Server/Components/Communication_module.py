@@ -31,32 +31,31 @@ class RobotCommunicator:
         print(f"Confirmation connection established with {addr}")
         self.confirmation_connection.settimeout(None)
 
-
-
-    def send_data(self, current_heading, target_heading, distance, vector_count):
-        data = {
-            "current_heading": float(current_heading),
-            "target_heading": float(target_heading),
-            "distance": float(distance),
-            "vector_count": int(vector_count)
-        }
-        message = json.dumps(data)
-        self.robot_connection.sendall(message.encode('utf-8'))
-        print(f"Sent data to robot: {message}")
+    def receive_request(self):
+        data = self.robot_connection.recv(1024).decode()
+        return data
 
     def update_heading(self, current_heading):
-        data = {
-            "heading": float(current_heading)
-        }
-        message = json.dumps(data)
-        self.robot_connection.sendall(message.encode('utf-8'))
-        print(f"Sent heading update to robot: {message}")
+        data = json.dumps({"current_heading": current_heading})
+        self.robot_connection.sendall(data.encode())
+        print("Updated robot heading")
 
     def receive_confirmation(self):
         data = self.confirmation_connection.recv(1024)
         confirmation = data.decode('utf-8')
         print(f"Received confirmation from robot: {confirmation}")
         return confirmation
+    
+    def send_data(self, current_heading, target_heading, distance, vector_count):
+        data = {
+            "current_heading": float(current_heading),
+            "target_heading": float(target_heading),
+            "distance": float(distance),
+            "waypoints_count": int(vector_count)
+        }
+        message = json.dumps(data)
+        self.robot_connection.sendall(message.encode('utf-8'))
+        print(f"Sent data to robot: {message}")
 
     def close(self):
         if self.robot_connection:

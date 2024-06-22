@@ -37,8 +37,21 @@ def generate_vectors_from_path(path_cm):
         vectors.append((distance, angle))
     return vectors
 
+def angle_difference(angle1, angle2):
+    diff = abs(angle1 - angle2) % 360
+    if diff > 180:
+        diff = 360 - diff
+    return diff
+
+
 '''Used to filter the insane amount of vectors created from the path'''
 def filter_vectors(vectors, distance_threshold=1.0, angle_threshold=5.0):
+    def angle_difference(angle1, angle2):
+        diff = abs(angle1 - angle2) % 360
+        if diff > 180:
+            diff = 360 - diff
+        return diff
+    
     filtered_vectors = []
     cumulative_distance = 0
     current_angle = None
@@ -48,13 +61,15 @@ def filter_vectors(vectors, distance_threshold=1.0, angle_threshold=5.0):
             current_angle = angle
             cumulative_distance = distance
         else:
-            if abs(angle - current_angle) > angle_threshold:
-                filtered_vectors.append((cumulative_distance, current_angle))
+            if angle_difference(angle, current_angle) > angle_threshold:
+                if cumulative_distance > distance_threshold:
+                    filtered_vectors.append((cumulative_distance, current_angle))
                 current_angle = angle
                 cumulative_distance = distance
             else:
                 cumulative_distance += distance
 
+    # Check the last accumulated vector
     if cumulative_distance > distance_threshold:
         filtered_vectors.append((cumulative_distance, current_angle))
 

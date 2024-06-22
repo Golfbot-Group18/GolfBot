@@ -17,6 +17,7 @@ def giveMeFrames():
 def infiniteCapture():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FPS, 60)
 
     #For windows
     #cap = cv2.VideoCapture(1)
