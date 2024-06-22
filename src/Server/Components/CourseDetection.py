@@ -1,15 +1,17 @@
 import os
 import cv2
 import numpy as np
-from scipy.spatial import KDTree
-from Components.BallDetection import DetectOrangeBall
+
+from src.Server.Camera.Calibration import CalibrateCamera
+from src.Server.Components.BallDetection import DetectOrangeBall
+from src.Server.Components.DetectionMethods import *
 from sklearn.cluster import DBSCAN
 
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
-# script_dir = os.path.dirname(os.path.abspath(__file__))
-# image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
-# img = cv2.imread(image_path)
+#script_dir = os.path.dirname(os.path.abspath(__file__))
+#image_path = os.path.join(script_dir, '..', 'Data', 'Images', 'Empty_course.jpeg')
+#img = cv2.imread(image_path)
 
 def giveMeBinaryBitch(img):
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -44,8 +46,14 @@ def giveMeBinaryBitch(img):
     return result_image
 
 
+def PatricksCoordinates(frame):
+    return None
+
+
 def giveMeCourseFramePoints(img):
+    img = CalibrateCamera(img)
     result_image = giveMeBinaryBitch(img)
+
     corners = cv2.goodFeaturesToTrack(result_image, maxCorners=100, qualityLevel=0.27, minDistance=10, blockSize=5,
                                       useHarrisDetector=True)
 
@@ -75,45 +83,40 @@ def giveMeCourseFramePoints(img):
         centroids = np.int32(centroids)
 
         # Now `centroids` contains the four intersection points
-        # print("Intersection Points:", centroids)
+        print("Intersection Points:", centroids)
         hull = cv2.convexHull(centroids)
         epsilon = 0.1 * cv2.arcLength(hull, True)
         approximated_points = cv2.approxPolyDP(hull, epsilon, True)
 
-        def sort_vertices(vertices):
-            vertices = vertices.reshape((4, 2))
-            sorted_vertices = sorted(vertices, key=lambda y: y[0])
-            left_points = sorted(sorted_vertices[:2], key=lambda y: y[1])
-            right_points = sorted(sorted_vertices[2:], key=lambda y: y[1])
-            return np.array([left_points[0], right_points[0], right_points[1], left_points[1]], dtype='int32')
-
-        sorted_points = sort_vertices(approximated_points)
-
-        # for i, point in enumerate(sorted_points):
-        #    cx, cy = point
-        #    cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),1)
-
-        # cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
-        # print("Printing approximated points:", sorted_points)
-        # cv2.imshow('Result', img)
-
         # Draw the corners on the result image
-        # for corner in corners:
-        #     x, y = corner.ravel()
-        #     cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
+        for corner in corners:
+            x, y = corner.ravel()
+            cv2.circle(img, (x, y), 5, (0, 0, 255), -1)
 
-        # for centroid in centroids:
-        #     x, y = centroid
-        #     cv2.circle(img, (x, y), 5, (0, 255, 0), -1)  # Red circles for centroids
+        for centroid in centroids:
+            x, y = centroid
+            cv2.circle(img, (x, y), 5, (0, 255, 0), -1)  # Red circles for centroids
 
-        # cv2.drawContours(img, [approximated_points], 0, (255, 0, 0), 2)
-        # print("Printing approximated points:", approximated_points)
-        # cv2.imshow('Result', img)
+        if len(approximated_points) == 4:
+            # Sort the points
+            def sort_vertices(vertices):
+                vertices = vertices.reshape((4, 2))
+                sorted_vertices = sorted(vertices, key=lambda y: y[0])
+                left_points = sorted(sorted_vertices[:2], key=lambda y: y[1])
+                right_points = sorted(sorted_vertices[2:], key=lambda y: y[1])
+                return np.array([left_points[0], right_points[0], right_points[1], left_points[1]], dtype='int32')
 
-        # The returned points are: Upper left, Upper Right, Lower Right, Lower Left
-        return sorted_points
-    else:
-        return None
+            sorted_points = sort_vertices(approximated_points)
+
+            for i, point in enumerate(sorted_points):
+                cx, cy = point
+                cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),1)
+
+            cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
+            print("Printing approximated points:", sorted_points)
+        cv2.imshow('Result', img)
+
+    return None
 
 
 def detect_color(img, color_range):
@@ -132,22 +135,12 @@ def convert_to_binary(img, threshold_value=128):
     return binary_image
 
 
-def generate_kd_tree(course_coords):
-    return KDTree(course_coords)
-
-
-'''Deprecated'''
-
-
 def course_coordinates(binary_image):
     white_coordinates = np.argwhere(binary_image == 255)
 
     # Print the coordinates
     for coord in white_coordinates:
         print(f"White pixel at (x, y): ({coord[1]}, {coord[0]})")
-
-
-'''Deprecated'''
 
 
 def define_inner_frame(mask, img):
@@ -163,9 +156,6 @@ def define_inner_frame(mask, img):
     return img
 
 
-'''Deprecated'''
-
-
 def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 255, 0)):
     # Tegner koordinatsystem på billedet
     height, width = img.shape[:2]
@@ -177,6 +167,62 @@ def draw_coordinate_system(img, interval=100, color_x=(255, 0, 0), color_y=(0, 2
     for y in range(0, height, interval):
         cv2.line(img, (0, y), (width, y), color_y, 1)
         cv2.putText(img, str(y), (width // 2, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_y, 1)
+
+
+def generate_grid(binary_image, interval):
+    height, width = binary_image.shape
+    print(f"Height: {height}, Width: {width}")
+    grid = []
+    for y in range(0, height):
+        row = []
+        for x in range(0, width):
+            cell = binary_image[y:y + interval, x:x + interval]
+            if np.any(cell == 255):
+                row.append(1)
+            else:
+                row.append(0)
+        grid.append(row)
+    return grid
+
+
+def visualize_grid(grid, interval):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255  # Hvid baggrund
+
+    for y in range(grid_height):
+        for x in range(grid_width):
+            color = (0, 0, 0) if grid[y][x] == 1 else (255, 255, 255)  # Sort celle hvis 1, ellers hvid celle
+            cv2.rectangle(vis_img, (x * interval, y * interval), ((x + 1) * interval, (y + 1) * interval), color, -1)
+
+    for x in range(0, grid_width * interval, interval):
+        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
+    for y in range(0, grid_height * interval, interval):
+        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
+
+    return vis_img
+
+
+def visualize_grid_with_path(grid, interval=10, path=[]):
+    grid_height = len(grid)
+    grid_width = len(grid[0])
+    vis_img = np.ones((grid_height * interval, grid_width * interval, 3), np.uint8) * 255
+
+    for y in range(grid_height):
+        for x in range(grid_width):
+            if grid[y][x] == 1:
+                vis_img[y * interval:(y + 1) * interval, x * interval:(x + 1) * interval] = (0, 0, 0)
+
+    for (y, x) in path:
+        cv2.circle(
+            vis_img, (x * interval + interval // 2, y * interval + interval // 2), interval * 10, (0, 0, 0), 1)
+
+    for x in range(0, grid_width * interval, interval):
+        cv2.line(vis_img, (x, 0), (x, grid_height * interval), (200, 200, 200), 1)
+    for y in range(0, grid_height * interval, interval):
+        cv2.line(vis_img, (0, y), (grid_width * interval, y), (200, 200, 200), 1)
+
+    return vis_img
 
 
 '''

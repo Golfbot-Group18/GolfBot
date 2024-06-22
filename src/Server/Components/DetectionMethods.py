@@ -33,13 +33,21 @@ def DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold
 
 
 def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
+
+
+
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     # Threshold the HSV image to get only orange colors
     mask = cv2.inRange(hsv, lower_color, upper_color)
-
+    cv2.imshow('mask', mask)
+    blockSize = 7  # Size of the local region
+    C = 10  # Constant subtracted from the mean
+    adaptive_thresh = cv2.adaptiveThreshold(mask, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                            cv2.THRESH_BINARY_INV, blockSize, C)
+    cv2.imshow('adaptive_thresh', adaptive_thresh)
     # Find contours
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cv2.imshow("mask", mask)
+    # cv2.imshow("mask", mask)
     # Filter contours by area and shape (assuming a ball shape)
     filtered_contours = []
     for contour in contours:
@@ -53,21 +61,25 @@ def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
     return filtered_contours
 
 
-def DetectColor(frame, lower, upper):
+def DetectColor(frame, lower, upper, area):
+    # Konverter fra BGR til HSV farverummet
     img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # If saturation needs boosting
     # img_hsv[..., 1] = img_hsv[..., 1]*1.1
 
     # Mask the image to find all green areas
     mask = cv2.inRange(img_hsv, lower, upper)
+    mask = FindLargestContour(mask, area)
+    return mask
 
+
+def FindLargestContour(mask,area):
     # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
     # Hence, the underscore
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter contours by area (you can adjust the threshold)
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 3000]
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > area]
 
     if filtered_contours:
         # Get the largest contour
