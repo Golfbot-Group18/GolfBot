@@ -123,16 +123,12 @@ def draw_egg_as_obstacle(egg_points, obstacle_grid, buffersize=10):
 
 
 def add_contour_to_obstacle_grid(grid, contour):
-    contour_points = []
-    for point in contour:
-        contour_points.append(tuple(point.squeeze()))
-
+    contour_points = np.array(contour).reshape((-1, 1, 2))
     mask = np.zeros(grid.shape, dtype=np.uint8)
-    cv2.drawContours(mask, [contour], -1, 255, thickness=cv2.FILLED)
-    kernel = np.ones((5,5), np.uint8)
+    cv2.drawContours(mask, [contour_points], -1, 255, thickness=cv2.FILLED)
+    kernel = np.ones((9,9), np.uint8)
     dilated_mask = cv2.dilate(mask, kernel, iterations=1)
 
     grid[dilated_mask > 0] = 0
 
     return grid
-
