@@ -42,22 +42,27 @@ def DetectBalls(frame):
     all_balls = DetectAllBalls(frame)
     actual_orange_ball = None
 
-    orange_ball_rectangle = [cv2.boundingRect(contour) for contour in detected_orange_ball]
-    for rect in orange_ball_rectangle:
-        x, y, w, h = rect
-        rect_center = (x + w // 2, y + h // 2)
-        for i, circle in enumerate(all_balls[0, :]):
-            circle_center = (circle[0], circle[1])
-            dist = np.sqrt((circle_center[0] - rect_center[0]) ** 2 + (circle_center[1] - rect_center[1]) ** 2)
-            if dist < 30:  # Adjust distance threshold as needed
-                actual_orange_ball = i
-                break
+    if detected_orange_ball is not None:
+        orange_ball_rectangle = [cv2.boundingRect(contour) for contour in detected_orange_ball]
+        for rect in orange_ball_rectangle:
+            x, y, w, h = rect
+            rect_center = (x + w // 2, y + h // 2)
+            for i, circle in enumerate(all_balls[0, :]):
+                circle_center = (circle[0], circle[1])
+                dist = np.sqrt((circle_center[0] - rect_center[0]) ** 2 + (circle_center[1] - rect_center[1]) ** 2)
+                if dist < 30:  # Adjust distance threshold as needed
+                    actual_orange_ball = i
+                    break
 
-    #sorted_balls = list(all_balls)
-    #sorted_balls.insert(0, sorted_balls.pop(actual_orange_ball))
-    #sorted_balls = tuple(sorted_balls)
-    print(f"Balls found: {all_balls}, orange ball value:  {actual_orange_ball}")
-    return all_balls, actual_orange_ball
+        #sorted_balls = list(all_balls)
+        #sorted_balls.insert(0, sorted_balls.pop(actual_orange_ball))
+        #sorted_balls = tuple(sorted_balls)
+        print(f"Balls found: {all_balls}, orange ball value:  {actual_orange_ball}")
+        return all_balls, actual_orange_ball
+    else:
+        return all_balls, None
+
+
 
 
 def GetFixedBallPoints():
