@@ -22,8 +22,8 @@ def DetectAllBalls(frame, isolate_white_balls=False):
         dp=1,
         minDist=20,
         param1=50,
-        param2=0.7,
-        minRadius=4,
+        param2=0.9,
+        minRadius=5,
         maxRadius=20
     )
     if circles is not None:
