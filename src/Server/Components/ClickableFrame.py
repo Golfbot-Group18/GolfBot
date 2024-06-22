@@ -53,8 +53,8 @@ def click_event(event, x, y, flags, params):
 
 
 if __name__ == "__main__":
-    video = 0
-    image = 1
+    video = 1
+    image = 0
     if video == 1:
         cap = cv2.VideoCapture(0)
         while True:

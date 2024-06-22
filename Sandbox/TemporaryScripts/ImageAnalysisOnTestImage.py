@@ -41,13 +41,14 @@ def ImageAnalysis(frame):
     backend = cv2.getBuildInformation()
     print("Metal" in backend)
 
-
+    '''
     standard_grid = generate_grid(binary, interval=1)
     obstacle_coords = find_obstacle_coords(standard_grid)
     obstacle_grid = create_obstacle_grid(obstacle_coords, standard_grid.shape)
     obstacle_grid = add_contour_to_obstacle_grid(obstacle_grid, eggs)
     grid_img = visualize_grid(obstacle_grid, interval=10)
     cv2.imshow("grid", grid_img)
+    '''
 
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
