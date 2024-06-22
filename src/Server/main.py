@@ -2,16 +2,16 @@ import json
 import socket
 import cv2
 import matplotlib.pyplot as plt
-from Components.Communication_module import RobotCommunicator
-from Components.RobotDetection import *
-from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
-from Components.BallDetection import DetectBalls
-from Camera.Calibration import CalibrateCamera
-from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
-from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
-from Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
-from Utils.px_conversion import realCoordinates
-from Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading, calculate_angle
+from src.Server.Components.Communication_module import RobotCommunicator
+from src.Server.Components.RobotDetection import *
+from src.Server.Components.MainImageAnalysis import giveMeFrames, infiniteCapture
+from src.Server.Components.BallDetection import DetectBalls
+from src.Server.Camera.Calibration import CalibrateCamera
+from src.Server.Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
+from src.Server.Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
+from src.Server.Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
+from src.Server.Utils.px_conversion import realCoordinates
+from src.Server.Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading, calculate_angle
 
 ''' For this we need the 4 corner points!!! - right now they are hardcoded in the function'''
 def calculate_homography_matrix(source_points=None):

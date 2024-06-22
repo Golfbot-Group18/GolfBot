@@ -1,7 +1,7 @@
 import math
-import src.Server.Components.DetectionMethods as detectionMethods
 import cv2
 import numpy as np
+from src.Server.Components.DetectionMethods import DetectColor
 
 
 def DetectRobot(frame):
@@ -11,18 +11,18 @@ def DetectRobot(frame):
     # lower_blue = np.array([0, 60, 90])
     # upper_blue = np.array([255, 100, 100])
 
-    green_area = detectionMethods.DetectColor(frame, lower_green, upper_green, 3000)
-    # blue_area = DetectColor(frame, lower_blue, upper_blue)
-    # tip =  DetectRobotEdge(frame)
-
-    return green_area, None
+    green_area = DetectColor(frame, lower_green, upper_green,1000)
+    if green_area is not None:
+        return green_area
+    else:
+        return None
 
 
 def euclidean_distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def CalculateRobotTriangle(contour): # <-returns nonetype
+def CalculateRobotTriangle(contour):
     # This function only works for a right-angled triangle on the robot
     # with precisely half the width of it in the middle
 
@@ -38,7 +38,6 @@ def CalculateRobotTriangle(contour): # <-returns nonetype
     # it means that the shape is not a triangle as it has more than 3 sides
     if len(approximated_points) != 3:
         return None
-    # raise ValueError("The approximated contour does not represent a triangle")
     else:
         # Reshapes the way the data is stored
         points = approximated_points.reshape((3, 2))
@@ -57,51 +56,63 @@ def CalculateRobotTriangle(contour): # <-returns nonetype
 
 def CalculateRobotWidth(contour):
     sorted_lengths = CalculateRobotTriangle(contour)
-    if sorted_lengths is not None and len(sorted_lengths) > 0:
-        shortest_length = sorted_lengths[0]
-        return shortest_length[0] * 2
+    shortest_length = sorted_lengths[0]
+
+    return shortest_length[0] * 2
+
+
+def CalculateRobotHeading(contour):
+    # Returns coordinates for tip of the robot
+    sorted_lengths = CalculateRobotTriangle(contour)
+    if sorted_lengths is not None:
+        # side_length_1 = sorted_lengths[0]
+
+        # Side length 2 is the adjacent side to the hypotenuse
+        side_length_2 = sorted_lengths[1]
+        # Side length 3 is the hypotenuse
+        side_length_3 = sorted_lengths[2]
+
+        # pt variables are unsorted points pt = (x,y) of the side lengths
+        pt1, pt2 = side_length_3[1]
+        pt3, pt4 = side_length_2[1]
+
+        # Overlapping point is the point of overlap of the hypotenuse and adjacent
+
+        if np.array_equal(pt3, pt1) or np.array_equal(pt3, pt2):
+            overlapping_point = pt3
+            starting_point = pt4
+
+        elif np.array_equal(pt4, pt1) or np.array_equal(pt4, pt2):
+            overlapping_point = pt4
+            starting_point = pt3
+        # Make it return the other point from side a so that we have a direction
+        else:
+            raise ValueError("Could not find overlapping point")
+
+        return starting_point, overlapping_point
     else:
+        print("Could not calculate Robot Triangle")
         return None
 
 
-def CalculateRobotHeading(contour): # <-returns nonetype
-    # Returns coordinates for tip of the robot
-    sorted_lengths = CalculateRobotTriangle(contour)
-    # side_length_1 = sorted_lengths[0]
-    side_length_2 = sorted_lengths[1]
-    side_length_3 = sorted_lengths[2]
-
-    pt1, pt2 = side_length_3[1]
-    pt3, pt4 = side_length_2[1]
-
-    overlapping_point = 0
-
-    if np.array_equal(pt1, pt3) or np.array_equal(pt1, pt4):
-        overlapping_point = pt1
-    elif np.array_equal(pt2, pt3) or np.array_equal(pt2, pt4):
-        overlapping_point = pt2
-    # Make it return the other point from side a so that we have a direction
-    return overlapping_point
+def Return_robot_position(frame):
+    robot_contour = DetectRobot(frame)
+    if robot_contour is not None:
+        robot_position_points = CalculateRobotHeading(robot_contour)
+        if robot_position_points is not None:
+            robot_base_position = np.array(robot_position_points[0], dtype=int)
+            robot_tip_position = np.array(robot_position_points[1], dtype=int)
+            return robot_base_position, robot_tip_position
+        else:
+            print("Could not calculate robot heading")
+            return None, None
+    else:
+        print("Could not find robot contour")
+        return None, None
 
 
-  # Robot returns noneType and not None
-  # Put egg in grid
-  # look at ball refinement
-  # orange ball not found
+def Return_robot_heading(robot_base, robot_tip):
+    robot_heading_vector = (robot_base[0] - robot_tip[0], robot_base[1] - robot_tip[1])
+    robot_heading = np.arctan2(robot_heading_vector[1], robot_heading_vector[0]) * 180 / np.pi
 
-
-"""""
-# Får den aktuelle mappe, hvor vores script ligger og den korrekte stig til billede filerne
-script_dir = os.path.dirname(os.path.abspath(__file__))
-image_path = os.path.join(script_dir, '..', 'data', 'images', 'Robot_green.jpg')
-img = cv2.imread(image_path)
-
-x, y, w, h = RobotDetection(img)
-# Draw the bounding rectangle on the original image
-cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
-cv2.namedWindow('Course Detected', cv2.WINDOW_NORMAL)
-cv2.resizeWindow('Course Detected', 720, 1280)
-cv2.imshow('Course Detected', img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-"""""
+    return robot_heading

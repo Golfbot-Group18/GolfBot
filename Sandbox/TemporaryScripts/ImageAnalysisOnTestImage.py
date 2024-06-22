@@ -5,9 +5,11 @@ import numpy as np
 from src.Server.Camera.Calibration import CalibrateCamera
 from src.Server.Components.BallDetection import *
 from src.Server.Components.EggDetection import *
+from src.Server.Components.GridGeneration import add_contour_to_obstacle_grid
 from src.Server.Components.RobotDetection import *
 from src.Server.Components.DetectionMethods import *
 from src.Server.Components.CourseDetection import *
+from src.Server.main import *
 
 
 def ImageAnalysisOnTestImage(image_path):
@@ -29,7 +31,7 @@ def ImageAnalysis(frame):
     orange = None
     balls, orange_index = DetectBalls(frame)
     egg = DetectEgg(frame)
-    green_area, blue_area = DetectRobot(frame)
+    green_area = DetectRobot(frame)
 
     eggs = DetectEgg(frame)
     orange_ball = DetectOrangeBall(frame)
@@ -38,6 +40,12 @@ def ImageAnalysis(frame):
     giveMeCourseFramePoints(frame)
     backend = cv2.getBuildInformation()
     print("Metal" in backend)
+
+    standard_grid, clearance_grid, max_distance, H, H_inv, = process_initial_state(frame)
+    add_contour_to_obstacle_grid(standard_grid,eggs)
+    grid_img = visualize_grid(standard_grid, interval=10)
+    clearance_grid_img = visualize_clearance_grid(clearance_grid, interval=10)
+    cv2.imshow("grid", grid_img)
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
@@ -67,13 +75,6 @@ def ImageAnalysis(frame):
             for point in contour:
                 x, y = point
                 print(f"Green point: ({x}, {y})")
-
-    if blue_area is not None:
-        cv2.drawContours(frame, [blue_area], -1, (0, 255, 0), 2)
-        for contour in blue_area:
-            for point in contour:
-                x, y = point
-                print(f"Blue point: ({x}, {y})")
 
     # If balls are found, draw them on the image
     if orange is not None:
