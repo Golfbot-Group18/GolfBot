@@ -29,12 +29,14 @@ def ImageAnalysis(frame):
     # cv2.imshow('Calibration', new_frame)
 
     orange = None
-    balls, orange_index = DetectBalls(frame)
+    white_balls = DetectAllBalls(frame,isolate_white_balls=True)
+    index, orange_ball = WhereIsTheOrangeBall(DetectAllBalls(frame), DetectOrangeBall(frame))
+
     egg = DetectEgg(frame)
     green_area = DetectRobot(frame)
 
     eggs = DetectEgg(frame)
-    orange_ball = DetectOrangeBall(frame)
+
 
     binary = giveMeBinaryBitch(frame)
     giveMeCourseFramePoints(frame)
@@ -71,7 +73,7 @@ def ImageAnalysis(frame):
             print(f"Heading coordinate: {robot_heading}")
 
     # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green rectangle
-
+    '''
     # Draw the bounding rectangle on the original image
     if green_area is not None:
         # cv2.drawContours(frame, [green_area], -1, (0, 255, 0), 2)
@@ -79,25 +81,26 @@ def ImageAnalysis(frame):
             for point in contour:
                 x, y = point
                 print(f"Green point: ({x}, {y})")
+    '''
+
+    if orange_ball is not None:
+        print("Ball Coordinates:")
+        balls = np.uint16(np.around(orange_ball))
+
+        x, y, radius = balls
+        cv2.circle(frame, (x, y),radius, (0, 255, 0), 2)
+        # Draw the center of the circle
+        cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
+
+        label_position = (x - 10, y - 10)
+        cv2.putText(frame, "Orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
+
 
     # If balls are found, draw them on the image
-    if orange is not None:
-        balls = np.uint16(np.around(balls))
-        print("Orange ball Coordinates:")
-        for i, circle in enumerate(balls[0, :]):
-            # Draw the outer circle
-            cv2.circle(frame, (circle[0], circle[1]), circle[2], (0, 255, 0), 2)
-            # Draw the center of the circle
-            cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
-
-            label_position = (circle[0] - 10, circle[1] - 10)
-            cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-            x, y, radius = circle
-            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
-
-    # If balls are found, draw them on the image
-    if balls is not None:
-        balls = np.uint16(np.around(balls))
+    if white_balls is not None:
+        balls = np.uint16(np.around(white_balls))
         print("Ball Coordinates:")
         for i, circle in enumerate(balls[0, :]):
             # Draw the outer circle
@@ -106,25 +109,21 @@ def ImageAnalysis(frame):
             cv2.circle(frame, (circle[0], circle[1]), 2, (0, 0, 255), 3)
 
             label_position = (circle[0] - 10, circle[1] - 10)
-            if i == orange_index:
-                cv2.putText(frame, "orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                x, y, radius = circle
-                print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
-            else:
-                cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                x, y, radius = circle
-                print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
+            cv2.putText(frame, "ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            x, y, radius = circle
+            print(f"Center coordinates: ({x}, {y}), Radius: {radius}")
 
     # If eggs are found, draw them on the image
     if eggs is not None:
         for contour in eggs:
             cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
 
+    '''
     # If orange ball is found, draw them on the image
     if orange_ball is not None:
         for contour in orange_ball:
             cv2.drawContours(frame, [contour], -1, (0, 0, 255), 2)  # Red color
-
+    '''
 
     cv2.imshow('Binary', binary)
     # Display the image with detected circles and contours
