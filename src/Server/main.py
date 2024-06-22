@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from Components.Communication_module import RobotCommunicator
 from Components.RobotDetection import *
 from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
-from Components.BallDetection import DetectBalls, GetFixedBallPoints
+from Components.BallDetection import DetectBalls
 from Camera.Calibration import CalibrateCamera
 from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
