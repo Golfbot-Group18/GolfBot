@@ -4,7 +4,7 @@ from shapely.geometry import Point
 import math
 
 def heuristic(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1]) #Manhattan distance - heuristic between two points in a grid, x1-x2 + y1-y2. 
+    return np.linalg.norm(np.array(a) - np.array(b)) #Manhattan distance - heuristic between two points in a grid, x1-x2 + y1-y2. 
 
 '''This is currently not used in the code. It does not use the clearance grid.'''
 def a_star_search(grid, start, goal):
@@ -63,10 +63,10 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
             break
 
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            neighbor = (current[0] + dx, current[1] + dy)
+            neighbor = (current[0] + dy, current[1] + dx)  # Neighbor in (y, x) format
             
             if 0 <= neighbor[0] < rows and 0 <= neighbor[1] < cols:
-                neighbor_clearance = clearance_grid[neighbor[0], neighbor[1]]
+                neighbor_clearance = clearance_grid[neighbor[0], neighbor[1]] #this is in the format of (y, x) in the clearance grid
                 #print(f"Checking neighbor: {neighbor}, Clearance: {neighbor_clearance}")
 
                 if neighbor_clearance >= min_clearance:

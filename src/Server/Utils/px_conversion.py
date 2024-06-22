@@ -42,7 +42,9 @@ def realCoordinates (robotHeight_cm: float, cameraHeight_cm: float, robotCoordin
 
         #print(f'correctionValue_x: {(x_diff/r)*correction_factor}')
         #print(f'correctionValue_y: {(y_diff/r)*correction_factor}')
-
+        print(f'corrected_x: {corrected_x}')
+        print(f'corrected_y: {corrected_y}')
+        print(f'returns as tuple: {corrected_x, corrected_y}')
         return corrected_x, corrected_y
     
     else: 
