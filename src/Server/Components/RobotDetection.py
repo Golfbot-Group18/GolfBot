@@ -11,7 +11,7 @@ def DetectRobot(frame):
     # lower_blue = np.array([0, 60, 90])
     # upper_blue = np.array([255, 100, 100])
 
-    green_area = DetectColor(frame, lower_green, upper_green,1000)
+    green_area = DetectColor(frame, lower_green, upper_green)
     if green_area is not None:
         return green_area
     else:
