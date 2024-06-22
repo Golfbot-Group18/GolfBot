@@ -13,8 +13,8 @@ image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green2.jpg')
 
 if __name__ == "__main__":
 
-    video = 0
-    image = 1
+    video = 1
+    image = 0
 
     if video == 1:
         ImageAnalysisOnVideo()

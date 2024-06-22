@@ -99,7 +99,7 @@ def DetectBalls(frame):
                 all_balls = (np.array(np.vstack((actual_orange_ball, white_balls[0])), dtype=np.float32),)
                 return all_balls, 0
             else:
-                return white_balls, 0
+                return white_balls, None
     else:
         return None, None
 
