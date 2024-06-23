@@ -56,29 +56,57 @@ def get_heading(communicator):
 
 
 def normalize_angle(angle):
+    """Normalize angle to be within the range [-180, 180) degrees."""
     return (angle + 180) % 360 - 180
 
-def turn_by_angle(turn_angle, gear_ratio, wheel_diameter, track_width, speed=100):
-    turn_circumference = math.pi * track_width
-    turn_distance = (turn_circumference * abs(turn_angle)) / 360
-    wheel_circumference = math.pi * wheel_diameter
-    rotations = turn_distance / wheel_circumference
-    degrees = rotations * 360 / gear_ratio
+def calculate_target_heading(current_position, target_position):
+    dx = target_position[1] - current_position[1]
+    dy = target_position[0] - current_position[0]
+    return math.degrees(math.atan2(dy, dx))
 
-    if turn_angle > 0:
-        # Turn clockwise
-        left_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=False)
-        right_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=True)
-    else:
-        # Turn counter-clockwise
-        left_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
-        right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=True)
-    
-    print("Turned {} degrees 'clockwise' if {} > 0 else 'counter-clockwise'".format(turn_angle, turn_angle))
+def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_diameter, track_width, speed=150):
+    remaining_angle = turn_angle
+    increment_angle = 20
 
-def drive_distance(distance: float, communicator: RobotCommunicator, speed=100):
+    while abs(remaining_angle) > 1: 
+        turn_increment = min(abs(remaining_angle), increment_angle) 
+
+        turn_circumference = math.pi * track_width
+        turn_distance = (turn_circumference * turn_increment) / 360
+        wheel_circumference = math.pi * wheel_diameter
+        rotations = turn_distance / wheel_circumference
+        degrees = rotations * 360 / gear_ratio
+
+        if remaining_angle > 0:
+            # Turn clockwise
+            left_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=False)
+            right_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=True)
+        else:
+            # Turn counterclockwise
+            left_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
+            right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=True)
+
+        communicator.send_confirmation("update_heading")
+        current_heading = communicator.receive_heading()
+
+        actual_turn = normalize_angle(current_heading - initial_heading)
+
+        remaining_angle = normalize_angle(turn_angle - actual_turn)
+
+        print("Turned to: {} degrees, remaining angle: {} degrees".format(current_heading, remaining_angle))
+
+    print("Final heading: {}".format(current_heading))
+
+def drive_distance(communicator: RobotCommunicator, target_position, speed=100):
     gyro.reset_angle(0)
     robot.reset()
+    communicator.send_confirmation("init_drive")
+    print("Waiting for first data in drive")
+    data = communicator.receive_data()
+    distance = data.get('distance')
+    current_heading = data.get('current_heading')
+    updated_position = data.get('updated_position')
+    print("received first data ")
     communicator.socket.setblocking(False)
     minDistance = 3000
     if distance > 0:
@@ -95,13 +123,21 @@ def drive_distance(distance: float, communicator: RobotCommunicator, speed=100):
                 minDistance = distance
 
                 print("Driving")
-                print("GyroAngle: ",gyro.angle())
-                correction = (0 - gyro.angle()) * GSPK
+                
+                #print("GyroAngle: ",gyro.angle())
+                print("Current Heading: ",current_heading)
+                target_heading = calculate_target_heading(updated_position, target_position)
+                print("Target Heading: ",target_heading)
+                turn_angle = normalize_angle(target_heading - current_heading)
+                print("Turn Angle: ",turn_angle)
+                correction = (turn_angle)
                 robot.drive(speed, correction)
                 wait(10)
                 try:
                     data = communicator.receive_data()
                     distance = data.get('distance')
+                    current_heading = data.get('current_heading')
+                    updated_position = data.get('updated_position')
                 except: 
                     print("No new data received")
                 
@@ -109,12 +145,19 @@ def drive_distance(distance: float, communicator: RobotCommunicator, speed=100):
             # previous one then it needs to back up
             else:
                 print("starting to drive")
-                correction = (0 - gyro.angle()) * GSPK
+                print("Current Heading: ",current_heading)
+                target_heading = calculate_target_heading(updated_position, target_position)
+                print("Target Heading: ",target_heading)
+                turn_angle = normalize_angle(target_heading - current_heading)
+                print("Turn Angle: ",turn_angle)
+                correction = (turn_angle)
                 robot.drive(-speed, correction)
                 wait(10)
                 try:
                     data = communicator.receive_data()
                     distance = data.get('distance')
+                    current_heading = data.get('current_heading')
+                    updated_position = data.get('updated_position')
                 except: 
                     print("No new data received")
 
@@ -132,10 +175,7 @@ def drive_distance(distance: float, communicator: RobotCommunicator, speed=100):
             
     
     robot.stop()
-    robot.brake()
-    robot.brake()
-
-    communicator.socket.setblocking(True)        
+    communicator.socket.setblocking(True)  
 
 def drive_distance_old(robot, distance, speed=100):
     gyro.reset_angle(0)
@@ -178,24 +218,24 @@ color = ColorSensor(Port.S1)
 gyro = GyroSensor(Port.S2)
 touch = TouchSensor(Port.S3)
 
-#communicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
-#communicator.connect_to_server()
-#communicator.connect_to_confirmation()
+communicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
+communicator.connect_to_server()
+communicator.connect_to_confirmation()
 
-turn_by_angle(90, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-
-'''
 while True:
     data = communicator.receive_data()
     current_position = data['current_position']
     current_heading = data['current_heading']
-    target_heading = data['target_heading']
-    distance = data['distance'] # the distance is in px
+    target_position = data['target_position']
     waypoints = data['waypoints_count']
     print("Received data: {}".format(data))
 
-    turn_by_angle(target_heading, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-    drive_distance(robot, distance)
+    target_heading = calculate_target_heading(current_position, target_position)
+    turn_angle = normalize_angle(target_heading - current_heading)
+    print("Turn angle: {}".format(turn_angle))
+
+    turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+    drive_distance(communicator, target_position)
 
     if waypoints > 1:
         communicator.send_confirmation("reached_waypoint")
@@ -203,5 +243,3 @@ while True:
     else:
         ev3.beep()
         break
-        '''
-

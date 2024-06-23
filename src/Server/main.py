@@ -9,7 +9,7 @@ from Components.BallDetection import DetectBalls, GetFixedBallPoints
 from Camera.Calibration import CalibrateCamera
 from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
-from Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
+from Pathfinding.Pathfinding import *
 from Utils.px_conversion import realCoordinates
 from Utils.path_conversion import *
 
@@ -97,15 +97,17 @@ def update_robot_heading():
 
 def update_robot_position():
     robot_height_cm = 21.8
-    camera_height_cm = 165
+    camera_height_cm = 164
 
-    image = giveMeFrames()
-    robot_base_position, _, _, _ = detect_robot_and_balls(image)
-    robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
-    return robot_base_position
+    while True:
+        image = giveMeFrames()
+        robot_base_position, _, _, _ = detect_robot_and_balls(image)
+        if robot_base_position is not None:
+            robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
+            return robot_base_position
 
-def send_distance_to_robot(communicator: RobotCommunicator,position: float ):
-     communicator.update_distance(currentPosition=position)
+def send_distance_to_robot(communicator: RobotCommunicator, remaining_distance, current_heading, current_position):
+     communicator.update_distance(distance = remaining_distance, current_heading=current_heading, current_position=current_position)
 
 def getDistance(desitnation: tuple, current: tuple)->float:
      
@@ -121,12 +123,8 @@ def main():
     standard_grid, clearance_grid, max_distance, = process_initial_state(frame)
 
     grid_img = visualize_grid(standard_grid, interval=10)
-    clearance_grid_img = visualize_clearance_grid(clearance_grid, interval=10)
-    #cv2.imshow('Standard Grid', grid_img)
-    #cv2.imshow('Clearance Grid', clearance_grid_img)    
-    #cv2.waitKey(0)
 
-    robot_width = 1
+    robot_width = 60
     buffer = 0
     required_clearance = (robot_width / 2 + buffer) / max_distance * 100
     min_clearance = required_clearance
@@ -175,9 +173,10 @@ def main():
             closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
-        closest_ball_updated_position = (closest_ball_position[1], closest_ball_position[0]) # this is in format (y, x)
+        closest_ball_position = realCoordinates(4, camera_height_cm, closest_ball_position) # this returns in format (x, y)
+        closest_ball_updated_position = (int(closest_ball_position[1]), int(closest_ball_position[0])) # this is in format (y, x)
 
-        cv2.circle(grid_img, (closest_ball_updated_position[1] * 10, closest_ball_updated_position[0] * 10), 20, (255, 0, 0), 50) # Blue
+        #cv2.circle(grid_img, (closest_ball_updated_position[1] * 10, closest_ball_updated_position[0] * 10), 20, (255, 0, 0), 50) # Blue
 
         robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
 
@@ -187,39 +186,23 @@ def main():
             center = (int(point[1] * 10), int(point[0] * 10))
             cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
 
-        if path is None:
+        if len(path) == 0:
             print("No valid path found to closest ball, keep looking.") 
             #better error handling here - not implemented the functions for edge balls either - will do later.
             continue
-            
-    
-        vectors = convert_path_to_vectors(path)
-        print(f"Vectors: {vectors}")
 
-        simple_vectors = simplify_vectors(vectors)
-        print(f"Simplified vectors: {simple_vectors}")
-
-        further = further_simplify_vectors(simple_vectors)
-        print(f"Further simplified vectors: {further}")
-
-        aggressive = aggressively_simplify_vectors(further)
-        print(f"Aggressive simplified vectors: {aggressive}")
-
-        combine = combine_small_steps(aggressive)
-        print(f"Combined vectors: {combine}")
-
-        travel_path = vectors_to_distance_and_heading(combine, robot_heading)
-        print(f"Travel path: {travel_path}")
-
-        normalized_travel_path = [(dist, normalize_angle(angle)) for dist, angle in travel_path]
-        print(f"Normalized travel path: {normalized_travel_path}")
+        simplified_path = ramer_douglas_peucker(path, 10)
+        for point in simplified_path:
+            center = (int(point[1] * 10), int(point[0] * 10))
+            cv2.circle(grid_img, center, 10, (0, 255, 255), 50)
+        print(f"Simplified path: {simplified_path}")
 
         cv2.imshow('Standard Grid', grid_img)
         cv2.waitKey(0)
 
-        if travel_path:
-            print(f"Sending data to robot - Current position: {robot_base_position}, Current heading: {robot_heading}, Target heading: {travel_path[0][1]}, Distance: {travel_path[0][0]}, Number of waypoints: {len(travel_path)}")
-            communicator.send_data(robot_base_position, robot_heading, normalized_travel_path[0][1], normalized_travel_path[0][0], len(normalized_travel_path))
+        if simplified_path:
+            print(f"Sending data to robot - Current position: {robot_base_position}, Current heading: {robot_heading}, Target{simplified_path[0]}, Number of waypoints: {len(simplified_path)}")
+            communicator.send_data(robot_base_position, robot_heading, simplified_path[1], len(simplified_path))
             while True:
                 print("Waiting for request...")
                 confirmation = communicator.receive_confirmation()
@@ -227,50 +210,53 @@ def main():
                     robot_heading = update_robot_heading()
                     print(f"Updated robot heading: {robot_heading}")
                     send_heading_to_robot(communicator, robot_heading)
-                elif confirmation == "update_pos":
-                    robot_base_position = update_robot_position()
-                    send_pos_to_robot(communicator, robot_base_position)
+                elif confirmation == "init_drive":
+                    #euclidean distance between the robot and target position
+                    remaining_distance = getDistance(simplified_path[1], robot_base_position)
+                    while remaining_distance > 3:
+                        initial_position = (int(robot_base_position[1]), int(robot_base_position[0]))
+                        updated_position = update_robot_position()
+                        current_position = (int(updated_position[1]), int(updated_position[0]))
+                        traveled_distance = getDistance(initial_position, updated_position)
+                        remaining_distance = getDistance(simplified_path[1], robot_base_position) - traveled_distance
+                        current_heading = update_robot_heading()
+                        print(f"Traveled distance: {traveled_distance}, Remaining distance: {remaining_distance} Current_heading: {current_heading}")
+                        send_distance_to_robot(communicator, remaining_distance, current_heading, current_position)
                 elif confirmation == "reached_waypoint":
                     if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
                         print("Robot reached the ball.")
                         break
+                    else:
+                        robot_base_position = update_robot_position()
+                        robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
+                        robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
+                        robot_base_updated_position = (robot_base_position[1], robot_base_position[0])
 
+                        robot_heading = update_robot_heading()
 
-'''
-        if filtered_vectors:
-            print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
-            communicator.send_data(robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
+                        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
+                        vectors = convert_path_to_vectors(path)
+                        print(f"Vectors: {vectors}")
 
-            while True:
-                request = communicator.receive_request()
-                if request == "update_heading":
-                    robot_heading = update_robot_heading()
-                    send_heading_to_robot(communicator, robot_heading)
+                        simple_vectors = simplify_vectors(vectors)
+                        print(f"Simplified vectors: {simple_vectors}")
 
-                elif request == "confirmation":
-                    confirmation = communicator.receive_confirmation()
-                    if confirmation == "reached_waypoint":
-                        if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
-                            print("Robot reached the ball.")
-                            break
+                        further = further_simplify_vectors(simple_vectors)
+                        print(f"Further simplified vectors: {further}")
 
-                        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, closest_ball_position, 0)
-                        if path is None:
-                            print("No valid path found, keep looking.")
-                            break
+                        aggressive = aggressively_simplify_vectors(further)
+                        print(f"Aggressive simplified vectors: {aggressive}")
 
-                        path_cm = [image_to_real_world(p[1], p[0], H) for p in path]
-                        vectors = generate_vectors_from_path(path_cm)
-                        relative_vectors = [(distance, (angle - robot_heading) % 360) for distance, angle in vectors]
-                        filtered_vectors = filter_vectors(relative_vectors)
+                        combine = combine_small_steps(aggressive)
+                        print(f"Combined vectors: {combine}")
 
-                        if filtered_vectors:    
-                            print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
-                            communicator.send_data(robot_base_position, robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
-                        else:
-                            print("Filtered vectors are empty, keep looking.")
-                            break
-    '''
+                        travel_path = vectors_to_distance_and_heading(combine, robot_heading)
+                        print(f"Travel path: {travel_path}")
+
+                        normalized_travel_path = [(dist, normalize_angle(angle)) for dist, angle in travel_path]
+                        print(f"Normalized travel path: {normalized_travel_path}")
+
+                        communicator.send_data(robot_base_position, robot_heading, normalized_travel_path[0][1], normalized_travel_path[0][0], len(normalized_travel_path))
 
 def send_heading_to_robot(communicator, current_heading):
     print(f"Sending heading to robot: {current_heading}")

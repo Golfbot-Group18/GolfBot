@@ -90,6 +90,39 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
     path.reverse()
     return path
 
+def calculate_distance_point_to_line(point, line_start, line_end):
+    """Calculate the distance from a point to a line segment."""
+    if line_start == line_end:
+        return math.sqrt((point[0] - line_start[0]) ** 2 + (point[1] - line_start[1]) ** 2)
+    else:
+        n = abs((line_end[1] - line_start[1]) * point[0] - (line_end[0] - line_start[0]) * point[1] + line_end[0] * line_start[1] - line_end[1] * line_start[0])
+        d = math.sqrt((line_end[1] - line_start[1]) ** 2 + (line_end[0] - line_start[0]) ** 2)
+        return n / d
+
+def ramer_douglas_peucker(points, epsilon):
+    """Simplify a path using the Ramer-Douglas-Peucker algorithm."""
+    if len(points) < 3:
+        return points
+
+    # Find the point with the maximum distance from the line
+    line_start, line_end = points[0], points[-1]
+    max_distance = 0
+    index = 0
+    for i in range(1, len(points) - 1):
+        distance = calculate_distance_point_to_line(points[i], line_start, line_end)
+        if distance > max_distance:
+            index = i
+            max_distance = distance
+
+    # If the max distance is greater than epsilon, recursively simplify
+    if max_distance > epsilon:
+        left = ramer_douglas_peucker(points[:index + 1], epsilon)
+        right = ramer_douglas_peucker(points[index:], epsilon)
+        return left[:-1] + right
+    else:
+        return [line_start, line_end]
+
+
 '''Also not currently used, but this function should be used to figure out if a ball is in proximity of an obstacle'''
 def is_goal_in_proximity(point, clearance_grid, threshold):
     x, y = point
