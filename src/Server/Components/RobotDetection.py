@@ -55,10 +55,13 @@ def CalculateRobotTriangle(contour):
 
 
 def CalculateRobotWidth(contour):
-    sorted_lengths = CalculateRobotTriangle(contour)
-    shortest_length = sorted_lengths[0]
-
-    return shortest_length[0] * 2
+    if contour is not None:
+        sorted_lengths = CalculateRobotTriangle(contour)
+        if sorted_lengths is not None:
+            shortest_length = sorted_lengths[0]
+            return shortest_length[0] * 2
+    else:
+        return None
 
 
 def CalculateRobotHeading(contour):
