@@ -76,9 +76,68 @@ def turn_by_angle(turn_angle, gear_ratio, wheel_diameter, track_width, speed=100
     
     print("Turned {} degrees 'clockwise' if {} > 0 else 'counter-clockwise'".format(turn_angle, turn_angle))
 
+def drive_distance(distance: float, communicator: RobotCommunicator, speed=100):
+    gyro.reset_angle(0)
+    robot.reset()
+    communicator.socket.setblocking(False)
+    minDistance = 3000
+    if distance > 0:
+        # This is the same for each of them to though speed is oppesed 
+        while distance>3:
+
+            if color.reflection() >= 1:
+                feed.run_time(speed=4000,time=5*1000, then= Stop.COAST, wait= False)
+            
+
+            # if the distance is the smallest distance it 
+            # has yet received that means it haven't overshot
+            if distance <= minDistance:
+                minDistance = distance
+
+                print("Driving")
+                print("GyroAngle: ",gyro.angle())
+                correction = (0 - gyro.angle()) * GSPK
+                robot.drive(speed, correction)
+                wait(10)
+                try:
+                    data = communicator.receive_data()
+                    distance = data.get('distance')
+                except: 
+                    print("No new data received")
+                
+            # If the new distance is longer than the 
+            # previous one then it needs to back up
+            else:
+                print("starting to drive")
+                correction = (0 - gyro.angle()) * GSPK
+                robot.drive(-speed, correction)
+                wait(10)
+                try:
+                    data = communicator.receive_data()
+                    distance = data.get('distance')
+                except: 
+                    print("No new data received")
+
+
         
 
-def drive_distance(robot, distance, speed=100):
+        #drive_base.stop()
+        #leftMotor.brake()
+        #rightMotor.brake()
+    '''    
+    else:
+        while distance > 2:
+        
+    '''
+            
+    
+    robot.stop()
+    robot.brake()
+    robot.brake()
+
+    communicator.socket.setblocking(True)        
+
+def drive_distance_old(robot, distance, speed=100):
     gyro.reset_angle(0)
     if distance > 0:
         while robot.distance() <= distance:

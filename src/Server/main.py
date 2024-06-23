@@ -104,6 +104,18 @@ def update_robot_position():
     robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
     return robot_base_position
 
+def send_distance_to_robot(communicator: RobotCommunicator,position: float ):
+     communicator.update_distance(currentPosition=position)
+
+def getDistance(desitnation: tuple, current: tuple)->float:
+     
+    xDiff = desitnation[1]-current[1]
+    yDiff = desitnation[0]-current[0]
+
+    distance = math.sqrt(math.pow(xDiff,2)+math.pow(yDiff,2))
+
+    return distance
+
 def main():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance, = process_initial_state(frame)

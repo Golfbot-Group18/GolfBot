@@ -44,6 +44,14 @@ class RobotCommunicator:
         data = json.dumps({"current_position": current_position})
         self.robot_connection.sendall(data.encode())
         print("Sent robot position")
+    
+    def update_distance(self, currentPosition: tuple): 
+        data = {
+            "distance": float(currentPosition)
+        }
+        message = json.dumps(data)
+        self.robot_connection.sendall(message.encode('utf-8'))
+        print(f"Sent heading update to robot: {message}")
 
     def receive_confirmation(self):
         data = self.confirmation_connection.recv(1024)
