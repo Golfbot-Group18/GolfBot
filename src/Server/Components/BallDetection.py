@@ -12,7 +12,7 @@ def DetectAllBalls(frame, isolate_white_balls=False):
 
     # Parameters are changed and this thresh is sothat only whitee balls are found but is a rough filtering
     if isolate_white_balls:
-        _, mask = cv2.threshold(mask, 195, 255, cv2.THRESH_BINARY)
+        _, mask = cv2.threshold(mask, 210, 255, cv2.THRESH_BINARY)
         cv2.imshow('Thresh', mask)
     # Use Hough Circle Transform to detect circles. These values have been modified to fit ball detection FHD resolution
     # Changing the visual size as well as resolution of picture of the balls will affect the circle detection
@@ -21,9 +21,9 @@ def DetectAllBalls(frame, isolate_white_balls=False):
         mask,
         cv2.HOUGH_GRADIENT_ALT,
         dp=1,
-        minDist=20,
+        minDist=15,
         param1=50,
-        param2=0.7,
+        param2=0.8,
         minRadius=5,
         maxRadius=20
     )
@@ -31,7 +31,6 @@ def DetectAllBalls(frame, isolate_white_balls=False):
         return circles
     else:
         return None
-
 
 
 def DetectOrangeBall(frame):
@@ -45,64 +44,33 @@ def DetectOrangeBall(frame):
     return orange_ball
 
 
-def DetectBalls(frame):
-    detected_orange_ball = DetectOrangeBall(frame)
-    all_balls = DetectAllBalls(frame)
-    actual_orange_ball = None
-
-    orange_ball_rectangle = [cv2.boundingRect(contour) for contour in detected_orange_ball]
-    if all_balls is not None:
+def WhereIsTheOrangeBall(balls, orange_ball_contour):
+    if balls is not None:
+        orange_ball_rectangle = [cv2.boundingRect(contour) for contour in orange_ball_contour]
+        index = None
+        orange_ball = None
         for rect in orange_ball_rectangle:
             x, y, w, h = rect
             rect_center = (x + w // 2, y + h // 2)
-            for i, circle in enumerate(all_balls[0, :]):
+            for i, circle in enumerate(balls[0, :]):
                 circle_center = (circle[0], circle[1])
                 dist = np.sqrt((circle_center[0] - rect_center[0]) ** 2 + (circle_center[1] - rect_center[1]) ** 2)
                 if dist < 30:  # Adjust distance threshold as needed
-                    actual_orange_ball = circle
+                    index = i
+                    orange_ball = circle
                     break
-
-        white_balls = DetectAllBalls(frame, isolate_white_balls=True)
-        if actual_orange_ball is not None:
-            for rect in orange_ball_rectangle:
-                x, y, w, h = rect
-                rect_center = (x + w // 2, y + h // 2)
-                for i, circle in enumerate(white_balls[0, :]):
-                    circle_center = (circle[0], circle[1])
-                    dist = np.sqrt((circle_center[0] - rect_center[0]) ** 2 + (circle_center[1] - rect_center[1]) ** 2)
-                    if dist < 30:  # Adjust distance threshold as needed
-                        white_balls_list = list(white_balls[0])
-                        white_balls_list.pop(i)
-                        white_balls = tuple(white_balls_list,)
-                        break
-
-        if white_balls is not None:
-            if actual_orange_ball is not None:
-                all_balls = (np.array(np.vstack((actual_orange_ball, white_balls[0])), dtype=np.float32),)
-                return all_balls, 0
-            else:
-                return white_balls, None
+        if orange_ball is not None:
+            return index, orange_ball
+        else:
+            return None, None
     else:
         return None, None
 
 
-
-
 def GetFixedBallPoints():
-    return [[[1313 , 539, 15.52368]]]
+    return [[[1313, 539, 15.52368]]]
 
 
 def is_point_in_proximity(point, tree, threshold=1.5):
     result = tree.query_ball_point(point, threshold)
     return len(result) > 0
-
-
-
-
-
-
-
-
-
-
-
