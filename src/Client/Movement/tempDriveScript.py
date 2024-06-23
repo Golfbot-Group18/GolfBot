@@ -25,14 +25,20 @@ ev3 = EV3Brick()
 ev3.speaker.beep()
 
 # initilize motor
-rightMotor = Motor(Port.A)
-leftMotor = Motor(Port.B)
+rightMotor = Motor(Port.A, Direction.CLOCKWISE)
+leftMotor = Motor(Port.B, Direction.CLOCKWISE)
 feed = Motor(Port.C)
 
-gyroControl = GyroController(Port.S1, 180)
+gyroControl = GyroController(Port.S2, 180)
+
+color = ColorSensor(port=Port.S1)
+
+touch = TouchSensor(port=Port.S3)
 
 
-drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=Port.C, gyroController=gyroControl)
+#drive = Drive(left_motor_port=Port.B, right_motor_port=Port.A, feed_motor_port=Port.C, gyroController=gyroControl)
+
+
 
 #print(gyroControl.get_angle())
 #drive.turn_to_angle(-90, 60)
@@ -54,9 +60,10 @@ print("ending it all")
 
 #driveExecution.driveForwards(30)
 
-#robot = DriveBase(leftMotor, rightMotor, 55.5, 180)
+robot = DriveBase(leftMotor, rightMotor, 55.5, 180)
 
-#robot.straight(distance=-200)
+robot.drive(-50,0)
+feed.run(4000)
 
 ev3.speaker.set_speech_options(language='en', voice='f1')
 ev3.speaker.say("Welcome to hell")
