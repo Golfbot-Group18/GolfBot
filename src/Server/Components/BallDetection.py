@@ -3,7 +3,7 @@ import numpy as np
 import src.Server.Components.DetectionMethods as detectionMethods
 
 
-def DetectAllBalls(frame, isolate_white_balls=False):
+def DetectAllBalls(frame, isolate_white_balls=False, minimum_distance_between_balls=15, perfect_circle_deviation=0.8, min_radius=10, max_radius=20):
     # Convert the image to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     mask = cv2.GaussianBlur(gray, (9, 9), 10)
@@ -20,11 +20,11 @@ def DetectAllBalls(frame, isolate_white_balls=False):
         mask,
         cv2.HOUGH_GRADIENT_ALT,
         dp=1,
-        minDist=15,
+        minDist=minimum_distance_between_balls,
         param1=50,
-        param2=0.8,
-        minRadius=5,
-        maxRadius=20
+        param2=perfect_circle_deviation,
+        minRadius=min_radius,
+        maxRadius=max_radius
     )
     if circles is not None:
         return circles
@@ -52,8 +52,8 @@ def DetectOrangeBall(frame):
     lower_orange = np.array([5, 100, 100])
     upper_orange = np.array([25, 255, 255])
 
-    #lower_orange = np.array([5, 100, 100])
-    #upper_orange = np.array([28, 255, 255])
+    # lower_orange = np.array([5, 100, 100])
+    # upper_orange = np.array([28, 255, 255])
 
     min_area = 300
     max_area = 1000  # Adjust based on your specific case
@@ -91,6 +91,3 @@ def PopBallFromTuple(balls, ball_to_pop):
     balls_list.pop(ball_to_pop)
     return tuple(balls, )
 
-    #sorted_balls = list(all_balls)
-    #sorted_balls.insert(0, sorted_balls.pop(actual_orange_ball))
-    #sorted_balls = tuple(sorted_balls)
