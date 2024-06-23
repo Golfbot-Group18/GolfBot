@@ -15,9 +15,12 @@ def calculate_distance_and_angle(p1, p2):
     return distance, angle
 '''
 
-def calculate_distance_and_angle(p1, p2):
-    distance = np.linalg.norm(np.array(p2) - np.array(p1))
-    angle = np.arctan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / np.pi
+def calculate_distance_and_angle(point1, point2):
+    dx = point2[0] - point1[0]
+    dy = -(point2[1] - point1[1])
+    
+    distance = math.sqrt(dx ** 2 + dy ** 2)
+    angle = math.degrees(math.atan2(dy, dx))
     return distance, angle
 
 def calculate_angle(vector):
@@ -30,47 +33,124 @@ def calculate_robot_heading(base, tip):
     return heading
 
 '''This function generates vectors from the path. The vectors are in the form of (distance, angle) - which means the heading the robot should have and the distance it should travel.'''
-def generate_vectors_from_path(path_cm):
+def convert_path_to_vectors(path):
     vectors = []
-    for i in range(1, len(path_cm)):
-        distance, angle = calculate_distance_and_angle(path_cm[i-1], path_cm[i])
-        vectors.append((distance, angle))
+    for i in range(len(path) - 1):
+        y1, x1 = path[i]
+        y2, x2 = path[i + 1]
+        dx = x2 - x1
+        dy = y2 - y1
+        vectors.append((dx, dy))
     return vectors
 
-def angle_difference(angle1, angle2):
-    diff = abs(angle1 - angle2) % 360
-    if diff > 180:
-        diff = 360 - diff
-    return diff
-
-
-'''Used to filter the insane amount of vectors created from the path'''
-def filter_vectors(vectors, distance_threshold=1.0, angle_threshold=5.0):
-    def angle_difference(angle1, angle2):
-        diff = abs(angle1 - angle2) % 360
-        if diff > 180:
-            diff = 360 - diff
-        return diff
+def simplify_vectors(vectors):
+    if not vectors:
+        return []
     
-    filtered_vectors = []
-    cumulative_distance = 0
-    current_angle = None
-
-    for distance, angle in vectors:
-        if current_angle is None:
-            current_angle = angle
-            cumulative_distance = distance
+    simplified_vectors = []
+    current_vector = vectors[0]
+    count = 1
+    
+    for i in range(1, len(vectors)):
+        if vectors[i] == current_vector:
+            count += 1
         else:
-            if angle_difference(angle, current_angle) > angle_threshold:
-                if cumulative_distance > distance_threshold:
-                    filtered_vectors.append((cumulative_distance, current_angle))
-                current_angle = angle
-                cumulative_distance = distance
+            simplified_vectors.append((current_vector[0] * count, current_vector[1] * count))
+            current_vector = vectors[i]
+            count = 1
+    
+    # Append the last accumulated vector
+    simplified_vectors.append((current_vector[0] * count, current_vector[1] * count))
+    
+    return simplified_vectors
+
+def further_simplify_vectors(vectors):
+    simplified_vectors = []
+    current_vector = vectors[0]
+    count = 1
+    
+    for i in range(1, len(vectors)):
+        if vectors[i] == current_vector:
+            count += 1
+        else:
+            if count > 1:
+                simplified_vectors.append((current_vector[0] * count, current_vector[1] * count))
             else:
-                cumulative_distance += distance
+                simplified_vectors.append(current_vector)
+            current_vector = vectors[i]
+            count = 1
+    
+    if count > 1:
+        simplified_vectors.append((current_vector[0] * count, current_vector[1] * count))
+    else:
+        simplified_vectors.append(current_vector)
+    
+    return simplified_vectors
 
-    # Check the last accumulated vector
-    if cumulative_distance > distance_threshold:
-        filtered_vectors.append((cumulative_distance, current_angle))
+def aggressively_simplify_vectors(vectors):
+    if not vectors:
+        return []
+    
+    simplified_vectors = []
+    current_vector = vectors[0]
+    current_dx = current_vector[0]
+    current_dy = current_vector[1]
+    
+    for i in range(1, len(vectors)):
+        if vectors[i][0] == current_vector[0] and vectors[i][1] == current_vector[1]:
+            current_dx += vectors[i][0]
+            current_dy += vectors[i][1]
+        else:
+            simplified_vectors.append((current_dx, current_dy))
+            current_vector = vectors[i]
+            current_dx = current_vector[0]
+            current_dy = current_vector[1]
+    
+    # Append the last accumulated vector
+    simplified_vectors.append((current_dx, current_dy))
+    
+    return simplified_vectors
 
-    return filtered_vectors
+def combine_small_steps(vectors, tolerance=1):
+    if not vectors:
+        return []
+
+    simplified_vectors = []
+    current_dx, current_dy = vectors[0]
+    accumulated_dx, accumulated_dy = current_dx, current_dy
+    
+    for i in range(1, len(vectors)):
+        dx, dy = vectors[i]
+        
+        # Check if the direction is the same within the tolerance
+        if abs(dx - current_dx) <= tolerance and abs(dy - current_dy) <= tolerance:
+            accumulated_dx += dx
+            accumulated_dy += dy
+        else:
+            simplified_vectors.append((accumulated_dx, accumulated_dy))
+            current_dx, current_dy = dx, dy
+            accumulated_dx, accumulated_dy = dx, dy
+
+    # Append the last accumulated vector
+    simplified_vectors.append((accumulated_dx, accumulated_dy))
+    
+    return simplified_vectors
+
+def vectors_to_distance_and_heading(vectors, initial_heading=0):
+    distance_and_heading = []
+    current_heading = initial_heading
+    
+    for dx, dy in vectors:
+        distance = math.sqrt(dx**2 + dy**2)
+        heading = math.degrees(math.atan2(dy, dx))
+        
+        # Adjust the heading relative to the robot's current heading
+        relative_heading = (heading - current_heading) % 360
+        
+        # Update the robot's current heading
+        current_heading = heading
+        
+        distance_and_heading.append((distance, relative_heading))
+    
+    return distance_and_heading
+

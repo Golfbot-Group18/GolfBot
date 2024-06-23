@@ -38,7 +38,12 @@ class RobotCommunicator:
     def update_heading(self, current_heading):
         data = json.dumps({"current_heading": current_heading})
         self.robot_connection.sendall(data.encode())
-        print("Updated robot heading")
+        print("Sent robot heading")
+    
+    def update_position(self, current_position):
+        data = json.dumps({"current_position": current_position})
+        self.robot_connection.sendall(data.encode())
+        print("Sent robot position")
 
     def receive_confirmation(self):
         data = self.confirmation_connection.recv(1024)
@@ -46,13 +51,16 @@ class RobotCommunicator:
         print(f"Received confirmation from robot: {confirmation}")
         return confirmation
     
-    def send_data(self, current_heading, target_heading, distance, vector_count):
+    def send_data(self, current_position, current_heading, target_heading, distance, vector_count):
+        current_position_list = list(current_position)
         data = {
+            "current_position": current_position_list,
             "current_heading": float(current_heading),
             "target_heading": float(target_heading),
             "distance": float(distance),
             "waypoints_count": int(vector_count)
         }
+        
         message = json.dumps(data)
         self.robot_connection.sendall(message.encode('utf-8'))
         print(f"Sent data to robot: {message}")

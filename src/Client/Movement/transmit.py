@@ -15,7 +15,7 @@ PORT = 12345  # Server port for receiving vectors
 CONFIRMATION_PORT = 12346  # Server port for sending confirmation
 AXLE_TRACK = 180  # Distance between the wheels
 WHEEL_DIAMETER = 55.5  # Diameter of the wheels
-GSPK = 2.5
+GSPK = 2.5 # Gyro sensor proportional constant
 
 class RobotCommunicator:
     def __init__(self, host, port, confirmation_port):
@@ -36,65 +36,47 @@ class RobotCommunicator:
         print("Connected to server for confirmation at {}:{}".format(self.host, self.confirmation_port))
 
     def receive_data(self):
-        data = self.socket.recv(4096)
-        data_str = data.decode('utf-8')
-        data_json = json.loads(data_str)
-        print("Data received:", data_json)
-        return data_json
-    
-    def request_current_heading(self):
-        self.socket.sendall("heading".encode('utf-8'))
-        print("Requested current heading")
+        data = self.socket.recv(1024).decode('utf-8')
+        return json.loads(data)
 
-    def get_current_heading(self):
-        self.request_current_heading()
-        data = self.receive_data()
-        heading = data.get('heading', 0)
-        return heading
+    def receive_heading(self):
+        message = self.socket.recv(1024).decode('utf-8')
+        data = json.loads(message)
+        return float(data["current_heading"])
 
     def send_confirmation(self, message):
         self.confirmation_socket.sendall(message.encode('utf-8'))
         print("Confirmation sent: {}".format(message))
 
-    def close(self):
-        if self.socket:
-            self.socket.close()
-        if self.confirmation_socket:
-            self.confirmation_socket.close()
-        print("Connection closed")
+def get_heading(communicator):
+    communicator.send_confirmation("update_heading")
+    new_heading = communicator.receive_heading()
+    print("Heading received: {}".format(new_heading))
+    return new_heading
 
-def get_current_heading(communicator):
-    current_heading = communicator.get_current_heading()
-    print("Current heading:", current_heading)
-    return current_heading
 
-def turn_to_angle(RobotCommunicator, start_heading, target_angle, wheel_diameter, track_width, speed=100):
-    current_heading = start_heading
+def normalize_angle(angle):
+    return (angle + 180) % 360 - 180
 
-    angle_to_turn = target_angle - current_heading
-    
-    angle_to_turn = (angle_to_turn + 180) % 360 - 180
-    
-    while abs(angle_to_turn) > 1:
-        turn_circumference = math.pi * track_width
+def turn_by_angle(turn_angle, gear_ratio, wheel_diameter, track_width, speed=100):
+    turn_circumference = math.pi * track_width
+    turn_distance = (turn_circumference * abs(turn_angle)) / 360
+    wheel_circumference = math.pi * wheel_diameter
+    rotations = turn_distance / wheel_circumference
+    degrees = rotations * 360 / gear_ratio
 
-        turn_distance = (turn_circumference * angle_to_turn) / 360
-
-        wheel_circumference = math.pi * wheel_diameter
-
-        rotations = turn_distance / wheel_circumference
-
-        degrees = rotations * 360
-
+    if turn_angle > 0:
+        # Turn clockwise
         left_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=False)
-        right_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
+        right_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=True)
+    else:
+        # Turn counter-clockwise
+        left_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
+        right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=True)
+    
+    print("Turned {} degrees 'clockwise' if {} > 0 else 'counter-clockwise'".format(turn_angle, turn_angle))
+
         
-        time.sleep(0.1)
-        
-        current_heading = get_current_heading(RobotCommunicator)
-        
-        angle_to_turn = target_angle - current_heading
-        angle_to_turn = (angle_to_turn + 180) % 360 - 180
 
 def drive_distance(robot, distance, speed=100):
     gyro.reset_angle(0)
@@ -126,30 +108,41 @@ ev3.speaker.beep()
 # Initialize motors
 right_motor = Motor(Port.A, Direction.COUNTERCLOCKWISE, [24, 16])
 left_motor = Motor(Port.B, Direction.COUNTERCLOCKWISE, [24, 16])
+
+teeth_driving_gear = 24
+teeth_driven_gear = 16
+gear_ratio = teeth_driven_gear / teeth_driving_gear
+
 robot = DriveBase(left_motor, right_motor, WHEEL_DIAMETER, AXLE_TRACK)
 feed = Motor(Port.C)
 color = ColorSensor(Port.S1)
 gyro = GyroSensor(Port.S2)
 touch = TouchSensor(Port.S3)
 
-RobotCommunicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
-RobotCommunicator.connect_to_server()
-RobotCommunicator.connect_to_confirmation()
+#communicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
+#communicator.connect_to_server()
+#communicator.connect_to_confirmation()
 
+turn_by_angle(90, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+
+'''
 while True:
-    data = RobotCommunicator.receive_data()
+    data = communicator.receive_data()
+    current_position = data['current_position']
     current_heading = data['current_heading']
     target_heading = data['target_heading']
-    distance = data['distance']
+    distance = data['distance'] # the distance is in px
     waypoints = data['waypoints_count']
+    print("Received data: {}".format(data))
 
-    turn_to_angle(RobotCommunicator, current_heading, target_heading, WHEEL_DIAMETER, AXLE_TRACK)
-
+    turn_by_angle(target_heading, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
     drive_distance(robot, distance)
 
     if waypoints > 1:
-        RobotCommunicator.send_confirmation("reached")
+        communicator.send_confirmation("reached_waypoint")
+        continue
     else:
-        ev3.speaker.beep()
+        ev3.beep()
         break
+        '''
 

@@ -11,7 +11,7 @@ from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoint
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
 from Pathfinding.Pathfinding import a_star_fms_search, is_goal_in_proximity, is_ball_shiftable
 from Utils.px_conversion import realCoordinates
-from Utils.path_conversion import convert_path_to_real_world, generate_vectors_from_path, filter_vectors, calculate_robot_heading, calculate_angle
+from Utils.path_conversion import *
 
 ''' For this we need the 4 corner points!!! - right now they are hardcoded in the function'''
 def calculate_homography_matrix(source_points=None):
@@ -57,10 +57,10 @@ def wait_for_start():
 def process_initial_state(frame):
     standard_grid, clearance_grid, max_distance = look_for_obstacles(frame)
     #we also need to place the egg on the course
-    source_points = giveMeCourseFramePoints(frame)
+    #source_points = giveMeCourseFramePoints(frame)
     #we also need to find the points for the 4 corners of the course
-    H, H_inv = calculate_homography_matrix(source_points)
-    return standard_grid, clearance_grid, max_distance, H, H_inv
+    #H, H_inv = calculate_homography_matrix(source_points)
+    return standard_grid, clearance_grid, max_distance, #H, H_inv
 
 '''A function to return robot position (center point), heading(relative to itself) and a list of all ball positions'''
 def detect_robot_and_balls(frame):
@@ -85,18 +85,28 @@ def update_robot_heading():
     robot_height_cm = 21.8
     camera_height_cm = 165
 
+    while True:
+        image = giveMeFrames()
+        robot_base_position, robot_tip_position, _ , _ = detect_robot_and_balls(image)
+        if robot_base_position is not None and robot_tip_position is not None:
+            robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
+            robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
+
+            robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
+            return robot_heading
+
+def update_robot_position():
+    robot_height_cm = 21.8
+    camera_height_cm = 165
+
     image = giveMeFrames()
-    robot_base_position, robot_tip_position, _ , _ = detect_robot_and_balls(image)
-
+    robot_base_position, _, _, _ = detect_robot_and_balls(image)
     robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
-    robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
-
-    robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
-    return robot_heading
+    return robot_base_position
 
 def main():
     frame = giveMeFrames()
-    standard_grid, clearance_grid, max_distance, H, H_inv, = process_initial_state(frame)
+    standard_grid, clearance_grid, max_distance, = process_initial_state(frame)
 
     grid_img = visualize_grid(standard_grid, interval=10)
     clearance_grid_img = visualize_clearance_grid(clearance_grid, interval=10)
@@ -112,9 +122,7 @@ def main():
     robot_height_cm = 21.8
     camera_height_cm = 165
 
-    wait_for_start()
-
-    communicator = RobotCommunicator(server_ip='0.0.0.0', server_port=12345, confirmation_port=12346)
+    communicator = RobotCommunicator('0.0.0.0', 12345, 12346)
     communicator.listen_for_robot()
     communicator.listen_for_confirmation()
 
@@ -140,8 +148,7 @@ def main():
         cv2.circle(grid_img, robot_tip_img, 20, (0, 255, 0), 50) # Green
 
         robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
-
-        print(f'True robot position (center point): {robot_base_position}    True robot tip point: {robot_tip_position} True robot heading: {robot_heading}')
+        print(f"Robot heading: {robot_heading}")
 
         if ball_positions is None:
             print("No balls detected keep looking")
@@ -157,9 +164,13 @@ def main():
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
         closest_ball_updated_position = (closest_ball_position[1], closest_ball_position[0]) # this is in format (y, x)
+
         cv2.circle(grid_img, (closest_ball_updated_position[1] * 10, closest_ball_updated_position[0] * 10), 20, (255, 0, 0), 50) # Blue
+
         robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
+
         path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
+
         for point in path:
             center = (int(point[1] * 10), int(point[0] * 10))
             cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
@@ -168,19 +179,52 @@ def main():
             print("No valid path found to closest ball, keep looking.") 
             #better error handling here - not implemented the functions for edge balls either - will do later.
             continue
-        
-        path_cm = [image_to_real_world(p[1], p[0], H) for p in path]
-        print(f"Path in cm: {path_cm}")
+            
+    
+        vectors = convert_path_to_vectors(path)
+        print(f"Vectors: {vectors}")
 
-        vectors = generate_vectors_from_path(path_cm)
+        simple_vectors = simplify_vectors(vectors)
+        print(f"Simplified vectors: {simple_vectors}")
 
-        relative_vectors = [(distance, normalize_angle(angle - robot_heading)) for distance, angle in vectors]
-        print(f"Relative vectors: {relative_vectors}")
-        filtered_vectors = filter_vectors(relative_vectors)
-        print(f"Filtered vectors: {filtered_vectors}")
+        further = further_simplify_vectors(simple_vectors)
+        print(f"Further simplified vectors: {further}")
+
+        aggressive = aggressively_simplify_vectors(further)
+        print(f"Aggressive simplified vectors: {aggressive}")
+
+        combine = combine_small_steps(aggressive)
+        print(f"Combined vectors: {combine}")
+
+        travel_path = vectors_to_distance_and_heading(combine, robot_heading)
+        print(f"Travel path: {travel_path}")
+
+        normalized_travel_path = [(dist, normalize_angle(angle)) for dist, angle in travel_path]
+        print(f"Normalized travel path: {normalized_travel_path}")
 
         cv2.imshow('Standard Grid', grid_img)
         cv2.waitKey(0)
+
+        if travel_path:
+            print(f"Sending data to robot - Current position: {robot_base_position}, Current heading: {robot_heading}, Target heading: {travel_path[0][1]}, Distance: {travel_path[0][0]}, Number of waypoints: {len(travel_path)}")
+            communicator.send_data(robot_base_position, robot_heading, normalized_travel_path[0][1], normalized_travel_path[0][0], len(normalized_travel_path))
+            while True:
+                print("Waiting for request...")
+                confirmation = communicator.receive_confirmation()
+                if confirmation == "update_heading":
+                    robot_heading = update_robot_heading()
+                    print(f"Updated robot heading: {robot_heading}")
+                    send_heading_to_robot(communicator, robot_heading)
+                elif confirmation == "update_pos":
+                    robot_base_position = update_robot_position()
+                    send_pos_to_robot(communicator, robot_base_position)
+                elif confirmation == "reached_waypoint":
+                    if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
+                        print("Robot reached the ball.")
+                        break
+
+
+'''
         if filtered_vectors:
             print(f"Sending data to robot - Current heading: {robot_heading}, Target heading: {filtered_vectors[0][1]}, Distance: {filtered_vectors[0][0]}, Number of waypoints: {len(filtered_vectors)}")
             communicator.send_data(robot_heading, filtered_vectors[0][1], filtered_vectors[0][0], len(filtered_vectors))
@@ -214,9 +258,14 @@ def main():
                         else:
                             print("Filtered vectors are empty, keep looking.")
                             break
+    '''
 
 def send_heading_to_robot(communicator, current_heading):
+    print(f"Sending heading to robot: {current_heading}")
     communicator.update_heading(current_heading=current_heading)
+
+def send_pos_to_robot(communicator, current_position):
+    communicator.update_position(current_position=current_position)
 
 if __name__ == "__main__":
     main()
