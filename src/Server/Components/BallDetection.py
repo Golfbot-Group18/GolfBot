@@ -24,7 +24,7 @@ def DetectAllBalls(frame, isolate_white_balls=False):
         minDist=15,
         param1=50,
         param2=0.8,
-        minRadius=5,
+        minRadius=8,
         maxRadius=20
     )
     if circles is not None:
@@ -68,7 +68,7 @@ def WhereIsTheOrangeBall(balls, orange_ball_contour):
 
 
 def GetFixedBallPoints():
-    return [[[1313, 539, 15.52368]]]
+    return [[[1377, 518, 13.41964]]]
 
 
 def is_point_in_proximity(point, tree, threshold=1.5):

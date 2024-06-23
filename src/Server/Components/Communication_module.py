@@ -45,12 +45,11 @@ class RobotCommunicator:
         self.robot_connection.sendall(data.encode())
         print("Sent robot position")
     
-    def update_distance(self, distance, current_position, current_heading): 
+    def update_position_and_heading(self, current_position, current_heading): 
         current_position_list = list(current_position)
         data = {
-            "distance": float(distance),
             "current_heading": current_heading,
-            "updated_position": current_position_list
+            "current_position": current_position_list
         }
         message = json.dumps(data)
         self.robot_connection.sendall(message.encode('utf-8'))

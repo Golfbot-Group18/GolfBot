@@ -4,8 +4,8 @@ import cv2
 import matplotlib.pyplot as plt
 from Components.Communication_module import RobotCommunicator
 from Components.RobotDetection import *
-from Components.MainImageAnalysis import giveMeFrames, infiniteCapture
-from Components.BallDetection import DetectBalls, GetFixedBallPoints
+from Components.MainImageAnalysis import *
+from Components.BallDetection import *
 from Camera.Calibration import CalibrateCamera
 from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
@@ -63,15 +63,23 @@ def process_initial_state(frame):
     return standard_grid, clearance_grid, max_distance, #H, H_inv
 
 '''A function to return robot position (center point), heading(relative to itself) and a list of all ball positions'''
-def detect_robot_and_balls(frame):
+def detect_balls(frame):
+    balls_result = DetectAllBalls(frame, isolate_white_balls=True)
+    if balls_result is not None:
+        return balls_result
+    return None
+
+def detect_orange_ball(frame):
+    _, orange_ball = WhereIsTheOrangeBall(DetectAllBalls(frame), DetectOrangeBall(frame))
+    if orange_ball is not None:
+        return orange_ball
+    return None
+
+def detect_robot(frame):
     robot_base_position, robot_tip_position = Return_robot_position(frame)
-    balls_result = DetectBalls(frame)
-    if len(balls_result) == 2:
-        ball_positions, orange_ball_index = balls_result
-    else:
-        ball_positions = balls_result[0]
-        orange_ball_index = None
-    return robot_base_position, robot_tip_position, ball_positions, orange_ball_index
+    if robot_base_position is not None:
+        return robot_base_position, robot_tip_position
+    return None, None
 
 def normalize_angle(angle):
     """Normalize angle to be within the -180 to 180 degree range."""
@@ -87,7 +95,7 @@ def update_robot_heading():
 
     while True:
         image = giveMeFrames()
-        robot_base_position, robot_tip_position, _ , _ = detect_robot_and_balls(image)
+        robot_base_position, robot_tip_position = detect_robot(image)
         if robot_base_position is not None and robot_tip_position is not None:
             robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
             robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
@@ -101,7 +109,7 @@ def update_robot_position():
 
     while True:
         image = giveMeFrames()
-        robot_base_position, _, _, _ = detect_robot_and_balls(image)
+        robot_base_position, _, = detect_robot(image)
         if robot_base_position is not None:
             robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
             return robot_base_position # this returns in format (x, y)
@@ -124,7 +132,7 @@ def main():
 
     grid_img = visualize_grid(standard_grid, interval=10)
 
-    robot_width = 60
+    robot_width = 300
     buffer = 0
     required_clearance = (robot_width / 2 + buffer) / max_distance * 100
     min_clearance = required_clearance
@@ -138,7 +146,10 @@ def main():
 
     while True:
         image = giveMeFrames()
-        robot_base_position, robot_tip_position, ball_positions, orange_ball_index = detect_robot_and_balls(image)
+        robot_base_position, robot_tip_position = detect_robot(image)
+        ball_positions = detect_balls(image)
+        #ball_positions = GetFixedBallPoints()
+        orange_ball = detect_orange_ball(image)
         print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
 
         if robot_base_position is None:
@@ -163,8 +174,8 @@ def main():
         
         flattened_ball_positions = [(int(ball[0]), int(ball[1])) for ball_array in ball_positions for ball in ball_array]
         
-        if orange_ball_index is not None:
-            closest_ball_position = flattened_ball_positions[orange_ball_index]
+        if orange_ball is not None:
+            closest_ball_position = (int(orange_ball[0]), int(orange_ball[1]))
             print(f"Closest ball is the orange ball at position: {closest_ball_position}")
         else:
             closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
@@ -176,7 +187,7 @@ def main():
 
         robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
 
-        robot_heading = Return_robot_heading(robot_base_position, robot_tip_position) # this is in degrees
+        robot_heading = round(Return_robot_heading(robot_base_position, robot_tip_position),1) # this is in degrees
         print(f"Robot heading: {robot_heading}")
 
         path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
@@ -189,86 +200,71 @@ def main():
             print("No valid path found to closest ball, keep looking.") 
             #better error handling here - not implemented the functions for edge balls either - will do later.
             continue
+            
 
-        simplified_path = ramer_douglas_peucker(path, 10)
+        #simplified_path = ramer_douglas_peucker(path, 10)
 
-        for point in simplified_path:
+        for point in path:
             center = (int(point[1] * 10), int(point[0] * 10))
-            cv2.circle(grid_img, center, 10, (0, 255, 255), 50)
+            cv2.circle(grid_img, center, 10, (0, 0, 255), 50) # Red
 
-        print(f"Simplified path: {simplified_path}")
+        print(f"Simplified path: {path}")
+        converted_path = []
+        for point in path:
+            converted_point = (point[1], point[0])  # Swap the coordinates
+            converted_path.append(converted_point)
+
+        simplified_path = converted_path
+
+        print(f"Path to closest ball: {simplified_path}")
 
         cv2.imshow('Standard Grid', grid_img)
         cv2.waitKey(0)
-
+        
         if simplified_path:
-            print(f"Sending data to robot - Current position: {robot_base_position}, Current heading: {robot_heading}, Target{simplified_path[0]}, Number of waypoints: {len(simplified_path)}")
-            communicator.send_data(robot_base_position, robot_heading, simplified_path[1], len(simplified_path))
+            iteration = 1
+            print(f"Sending data to robot - Current position: {robot_base_position}, Current heading: {robot_heading}, Target{simplified_path[0]}, Number of waypoints: {len(simplified_path) - 1}")
+            communicator.send_data(robot_base_position, robot_heading, simplified_path[iteration], len(simplified_path) - iteration)
             while True:
                 print("Waiting for request...")
                 confirmation = communicator.receive_confirmation()
                 if confirmation == "update_heading":
                     robot_heading = update_robot_heading() # this is in degrees
+                    robot_heading = (int(robot_heading))
                     print(f"Updated robot heading: {robot_heading}")
                     send_heading_to_robot(communicator, robot_heading)
-                elif confirmation == "init_drive":
-                    remaining_distance = getDistance(simplified_path[1], robot_base_position) # This is in px. This is the current distance between the robot and the next waypoint
-                    while remaining_distance > 3:
-                        initial_position = (int(robot_base_position[0]), int(robot_base_position[1])) # Initial robot position
-                        updated_position = update_robot_position() # Update robot position from sensors
-                        current_position = (int(updated_position[0]), int(updated_position[1])) # Convert to integer coordinates
+                elif confirmation == "update_position_and_heading":
+                    robot_base_position = update_robot_position()
+                    robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
 
-                        traveled_distance = getDistance(initial_position, updated_position) # Distance traveled in the last loop
-                        remaining_distance = getDistance(simplified_path[1], current_position) # Updated remaining distance
+                    robot_heading = update_robot_heading()
+                    robot_heading = (int(robot_heading))
 
-                        current_heading = update_robot_heading() # Updated robot heading
-                        print(f"Traveled distance: {traveled_distance}, Remaining distance: {remaining_distance}, Current heading: {current_heading}")
-
-                        send_distance_to_robot(communicator, remaining_distance, current_heading, current_position)
-                        # Update robot_base_position for the next iteration
-                        robot_base_position = updated_position
+                    send_pos_head_to_robot(communicator, robot_base_position, robot_heading)
                 elif confirmation == "reached_waypoint":
-                    if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
-                        print("Robot reached the ball.")
-                        break
-                    else:
-                        robot_base_position = update_robot_position()
-                        robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
-                        robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
-                        robot_base_updated_position = (robot_base_position[1], robot_base_position[0])
-
-                        robot_heading = update_robot_heading()
-
-                        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
-                        vectors = convert_path_to_vectors(path)
-                        print(f"Vectors: {vectors}")
-
-                        simple_vectors = simplify_vectors(vectors)
-                        print(f"Simplified vectors: {simple_vectors}")
-
-                        further = further_simplify_vectors(simple_vectors)
-                        print(f"Further simplified vectors: {further}")
-
-                        aggressive = aggressively_simplify_vectors(further)
-                        print(f"Aggressive simplified vectors: {aggressive}")
-
-                        combine = combine_small_steps(aggressive)
-                        print(f"Combined vectors: {combine}")
-
-                        travel_path = vectors_to_distance_and_heading(combine, robot_heading)
-                        print(f"Travel path: {travel_path}")
-
-                        normalized_travel_path = [(dist, normalize_angle(angle)) for dist, angle in travel_path]
-                        print(f"Normalized travel path: {normalized_travel_path}")
-
-                        communicator.send_data(robot_base_position, robot_heading, normalized_travel_path[0][1], normalized_travel_path[0][0], len(normalized_travel_path))
-
+                    print("Robot reached a waypoint.")
+                    iteration += 1
+                    robot_base_position = update_robot_position()
+                    robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
+                    robot_heading = update_robot_heading()
+                    robot_heading = (int(robot_heading))
+                    communicator.send_data(robot_base_position, robot_heading, simplified_path[iteration], len(simplified_path) - iteration)
+                    continue
+                elif confirmation == "reached_goal":
+                    print("Robot reached the goal.")
+                    iteration = 1
+                    break
+                        
+                        
 def send_heading_to_robot(communicator, current_heading):
     print(f"Sending heading to robot: {current_heading}")
     communicator.update_heading(current_heading=current_heading)
 
 def send_pos_to_robot(communicator, current_position):
     communicator.update_position(current_position=current_position)
+
+def send_pos_head_to_robot(communicator, current_position, current_heading):
+    communicator.update_position_and_heading(current_position=current_position, current_heading=current_heading)
 
 if __name__ == "__main__":
     main()

@@ -45,12 +45,13 @@ def a_star_search(grid, start, goal):
     return path 
 
 '''At the moment this function calculates shortest path from the center point of the robot to the goal point. We might need to change this to calculate the path from the tip of the robot to the goal point. '''
-def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
+def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance, epsilon=100):
     rows, cols = grid.shape
     open_set = PriorityQueue()
     open_set.put((0, start))
     came_from = {}
     cost_so_far = {start: 0}
+    path = []
 
     print(f"Starting A* search from {start} to {goal} with minimum clearance {min_clearance}")
 
@@ -88,7 +89,10 @@ def a_star_fms_search(grid, clearance_grid, start, goal, min_clearance):
             return []
     path.append(start)
     path.reverse()
-    return path
+    #return path
+
+    simplified_path = ramer_douglas_peucker(path, epsilon)
+    return simplified_path
 
 def calculate_distance_point_to_line(point, line_start, line_end):
     """Calculate the distance from a point to a line segment."""

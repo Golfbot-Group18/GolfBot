@@ -1,8 +1,5 @@
 import cv2
 import numpy as np
-from Components.EggDetection import DetectEgg
-from Components.BallDetection import DetectBalls
-from Components.RobotDetection import DetectRobot
 from Camera.Calibration import CalibrateCamera
 
 def giveMeFrames():
@@ -13,7 +10,7 @@ def giveMeFrames():
     else:
         return CalibrateCamera(frame)
 
-
+'''
 def infiniteCapture():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
@@ -89,7 +86,7 @@ def infiniteCapture():
     cv2.destroyAllWindows()
     return balls, egg, robot_contour
 
-'''
+
 def bitchImagePlease():
     # Open a connection to the camera (0 is usually the default camera)
     cap = cv2.VideoCapture(0)
