@@ -104,7 +104,6 @@ def ramer_douglas_peucker(points, epsilon):
     if len(points) < 3:
         return points
 
-    # Find the point with the maximum distance from the line
     line_start, line_end = points[0], points[-1]
     max_distance = 0
     index = 0
@@ -114,7 +113,6 @@ def ramer_douglas_peucker(points, epsilon):
             index = i
             max_distance = distance
 
-    # If the max distance is greater than epsilon, recursively simplify
     if max_distance > epsilon:
         left = ramer_douglas_peucker(points[:index + 1], epsilon)
         right = ramer_douglas_peucker(points[index:], epsilon)

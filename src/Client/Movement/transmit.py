@@ -222,6 +222,7 @@ communicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
 communicator.connect_to_server()
 communicator.connect_to_confirmation()
 
+
 while True:
     data = communicator.receive_data()
     current_position = data['current_position']

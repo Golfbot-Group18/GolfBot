@@ -104,7 +104,7 @@ def update_robot_position():
         robot_base_position, _, _, _ = detect_robot_and_balls(image)
         if robot_base_position is not None:
             robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
-            return robot_base_position
+            return robot_base_position # this returns in format (x, y)
 
 def send_distance_to_robot(communicator: RobotCommunicator, remaining_distance, current_heading, current_position):
      communicator.update_distance(distance = remaining_distance, current_heading=current_heading, current_position=current_position)
@@ -157,9 +157,6 @@ def main():
         robot_tip_img = (int(robot_tip_position[0] * 10), int(robot_tip_position[1] * 10))
         cv2.circle(grid_img, robot_tip_img, 20, (0, 255, 0), 50) # Green
 
-        robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
-        print(f"Robot heading: {robot_heading}")
-
         if ball_positions is None:
             print("No balls detected keep looking")
             continue
@@ -174,11 +171,13 @@ def main():
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
         closest_ball_position = realCoordinates(4, camera_height_cm, closest_ball_position) # this returns in format (x, y)
+
         closest_ball_updated_position = (int(closest_ball_position[1]), int(closest_ball_position[0])) # this is in format (y, x)
 
-        #cv2.circle(grid_img, (closest_ball_updated_position[1] * 10, closest_ball_updated_position[0] * 10), 20, (255, 0, 0), 50) # Blue
-
         robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
+
+        robot_heading = Return_robot_heading(robot_base_position, robot_tip_position) # this is in degrees
+        print(f"Robot heading: {robot_heading}")
 
         path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
 
@@ -192,9 +191,11 @@ def main():
             continue
 
         simplified_path = ramer_douglas_peucker(path, 10)
+
         for point in simplified_path:
             center = (int(point[1] * 10), int(point[0] * 10))
             cv2.circle(grid_img, center, 10, (0, 255, 255), 50)
+
         print(f"Simplified path: {simplified_path}")
 
         cv2.imshow('Standard Grid', grid_img)
@@ -207,21 +208,25 @@ def main():
                 print("Waiting for request...")
                 confirmation = communicator.receive_confirmation()
                 if confirmation == "update_heading":
-                    robot_heading = update_robot_heading()
+                    robot_heading = update_robot_heading() # this is in degrees
                     print(f"Updated robot heading: {robot_heading}")
                     send_heading_to_robot(communicator, robot_heading)
                 elif confirmation == "init_drive":
-                    #euclidean distance between the robot and target position
-                    remaining_distance = getDistance(simplified_path[1], robot_base_position)
+                    remaining_distance = getDistance(simplified_path[1], robot_base_position) # This is in px. This is the current distance between the robot and the next waypoint
                     while remaining_distance > 3:
-                        initial_position = (int(robot_base_position[1]), int(robot_base_position[0]))
-                        updated_position = update_robot_position()
-                        current_position = (int(updated_position[1]), int(updated_position[0]))
-                        traveled_distance = getDistance(initial_position, updated_position)
-                        remaining_distance = getDistance(simplified_path[1], robot_base_position) - traveled_distance
-                        current_heading = update_robot_heading()
-                        print(f"Traveled distance: {traveled_distance}, Remaining distance: {remaining_distance} Current_heading: {current_heading}")
+                        initial_position = (int(robot_base_position[0]), int(robot_base_position[1])) # Initial robot position
+                        updated_position = update_robot_position() # Update robot position from sensors
+                        current_position = (int(updated_position[0]), int(updated_position[1])) # Convert to integer coordinates
+
+                        traveled_distance = getDistance(initial_position, updated_position) # Distance traveled in the last loop
+                        remaining_distance = getDistance(simplified_path[1], current_position) # Updated remaining distance
+
+                        current_heading = update_robot_heading() # Updated robot heading
+                        print(f"Traveled distance: {traveled_distance}, Remaining distance: {remaining_distance}, Current heading: {current_heading}")
+
                         send_distance_to_robot(communicator, remaining_distance, current_heading, current_position)
+                        # Update robot_base_position for the next iteration
+                        robot_base_position = updated_position
                 elif confirmation == "reached_waypoint":
                     if np.linalg.norm(np.array(robot_base_position) - np.array(closest_ball_position)) < 10:
                         print("Robot reached the ball.")
