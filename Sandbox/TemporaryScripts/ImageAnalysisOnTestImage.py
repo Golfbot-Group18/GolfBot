@@ -30,7 +30,7 @@ def ImageAnalysis(frame):
 
     orange = None
     white_balls = DetectAllBalls(frame,isolate_white_balls=True)
-    index, orange_ball = WhereIsTheOrangeBall(DetectAllBalls(frame), DetectOrangeBall(frame))
+    _, orange_ball = WhereIsTheOrangeBall(DetectAllBalls(frame), DetectOrangeBall(frame))
 
     egg = DetectEgg(frame)
     green_area = DetectRobot(frame)
