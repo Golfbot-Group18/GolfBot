@@ -91,3 +91,10 @@ def PopBallFromTuple(balls, ball_to_pop):
     balls_list.pop(ball_to_pop)
     return tuple(balls, )
 
+def GetFixedBallPoints():
+    return [[[1313, 539, 15.52368]]]
+
+
+def is_point_in_proximity(point, tree, threshold=1.5):
+    result = tree.query_ball_point(point, threshold)
+    return len(result) > 0

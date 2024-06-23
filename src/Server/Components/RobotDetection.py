@@ -115,7 +115,14 @@ def Return_robot_position(frame):
 
 
 def Return_robot_heading(robot_base, robot_tip):
-    robot_heading_vector = (robot_base[0] - robot_tip[0], robot_base[1] - robot_tip[1])
-    robot_heading = np.arctan2(robot_heading_vector[1], robot_heading_vector[0]) * 180 / np.pi
+    x_c, y_c = robot_base
+    x_t, y_t = robot_tip
+    
+    delta_x = x_t - x_c
+    delta_y = y_t - y_c
+    
+    theta = math.atan2(delta_y, delta_x)
+    
+    degrees = math.degrees(theta)
 
-    return robot_heading
+    return (degrees + 180) % 360 - 180

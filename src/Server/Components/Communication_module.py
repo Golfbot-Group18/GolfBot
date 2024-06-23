@@ -31,22 +31,26 @@ class RobotCommunicator:
         print(f"Confirmation connection established with {addr}")
         self.confirmation_connection.settimeout(None)
 
-
-
-    def send_data(self, current_heading, target_heading, distance, vector_count):
-        data = {
-            "current_heading": float(current_heading),
-            "target_heading": float(target_heading),
-            "distance": float(distance),
-            "vector_count": int(vector_count)
-        }
-        message = json.dumps(data)
-        self.robot_connection.sendall(message.encode('utf-8'))
-        print(f"Sent data to robot: {message}")
+    def receive_request(self):
+        data = self.robot_connection.recv(1024).decode()
+        return data
 
     def update_heading(self, current_heading):
+        data = json.dumps({"current_heading": current_heading})
+        self.robot_connection.sendall(data.encode())
+        print("Sent robot heading")
+    
+    def update_position(self, current_position):
+        data = json.dumps({"current_position": current_position})
+        self.robot_connection.sendall(data.encode())
+        print("Sent robot position")
+    
+    def update_distance(self, distance, current_position, current_heading): 
+        current_position_list = list(current_position)
         data = {
-            "heading": float(current_heading)
+            "distance": float(distance),
+            "current_heading": current_heading,
+            "updated_position": current_position_list
         }
         message = json.dumps(data)
         self.robot_connection.sendall(message.encode('utf-8'))
@@ -57,6 +61,20 @@ class RobotCommunicator:
         confirmation = data.decode('utf-8')
         print(f"Received confirmation from robot: {confirmation}")
         return confirmation
+    
+    def send_data(self, current_position, current_heading, target_position, vector_count):
+        current_position_list = list(current_position)
+        target_position_list = list(target_position)
+        data = {
+            "current_position": current_position_list,
+            "current_heading": float(current_heading),
+            "target_position": target_position_list,
+            "waypoints_count": int(vector_count)
+        }
+        
+        message = json.dumps(data)
+        self.robot_connection.sendall(message.encode('utf-8'))
+        print(f"Sent data to robot: {message}")
 
     def close(self):
         if self.robot_connection:
