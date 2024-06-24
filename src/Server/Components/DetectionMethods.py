@@ -61,6 +61,7 @@ def DetectColor(frame, lower, upper):
 
     # Mask the image to find all green areas
     mask = cv2.inRange(img_hsv, lower, upper)
+    cv2.imshow("maskhsv", mask)
 
     # Returns a list of contours, and the second value is a hierarchy (which we don’t need in this case).
     # Hence, the underscore

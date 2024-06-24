@@ -5,8 +5,8 @@ from src.Server.Components.DetectionMethods import DetectColor
 
 
 def DetectRobot(frame):
-    lower_green = np.array([50, 45, 80])
-    upper_green = np.array([100, 150, 255])
+    lower_green = np.array([60, 45, 80])
+    upper_green = np.array([100, 255, 255])
 
     # lower_blue = np.array([0, 60, 90])
     # upper_blue = np.array([255, 100, 100])
@@ -31,7 +31,7 @@ def CalculateRobotTriangle(contour):
     # width, height = rect[1]
 
     # Approximates and straightens the contour lines so that it extracts the vertices of the shape
-    epsilon = 0.02 * cv2.arcLength(contour, True)
+    epsilon = 0.05 * cv2.arcLength(contour, True)
     approximated_points = cv2.approxPolyDP(contour, epsilon, True)
 
     # If the approximation returns a list longer than 3,

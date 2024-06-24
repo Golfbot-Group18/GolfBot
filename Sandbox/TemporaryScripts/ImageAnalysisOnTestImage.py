@@ -29,17 +29,38 @@ def ImageAnalysis(frame):
     # cv2.imshow('Calibration', new_frame)
 
     orange = None
-    white_balls = DetectAllBalls(frame,isolate_white_balls=True)
+    white_balls = DetectAllBalls(frame, isolate_white_balls=True)
     _, orange_ball = WhereIsTheOrangeBall(DetectAllBalls(frame), DetectOrangeBall(frame))
+
+    robot = DetectRobot(frame)
+    if robot is not None:
+        heading = CalculateRobotHeading(robot)
+        if heading is not None:
+            print(heading)
 
     egg = DetectEgg(frame)
     green_area = DetectRobot(frame)
 
     eggs = DetectEgg(frame)
 
-
     binary = giveMeBinaryBitch(frame)
     giveMeCourseFramePoints(frame)
+
+    small_goal_center_point, big_goal_center_point = giveMeGoalPoints(frame)
+
+    if small_goal_center_point is not None:
+        print(small_goal_center_point)
+        small_goal_center_point = np.uint16(np.around(small_goal_center_point))
+        sx, sy = small_goal_center_point
+        cv2.circle(frame, (sx, sy), 5, (0, 0, 255), -1)
+        cv2.putText(frame, "small goal", (sx, sy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    if big_goal_center_point is not None:
+        print(big_goal_center_point)
+        big_goal_center_point = np.uint16(np.around(big_goal_center_point))
+        sx, sy = big_goal_center_point
+        cv2.circle(frame, (sx,sy), 5, (0, 0, 255), -1)
+        cv2.putText(frame, "big goal", (sx, sy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
     backend = cv2.getBuildInformation()
     print("Metal" in backend)
 
@@ -51,7 +72,6 @@ def ImageAnalysis(frame):
     grid_img = visualize_grid(obstacle_grid, interval=10)
     cv2.imshow("grid", grid_img)
     '''
-
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)
@@ -88,7 +108,7 @@ def ImageAnalysis(frame):
         balls = np.uint16(np.around(orange_ball))
 
         x, y, radius = balls
-        cv2.circle(frame, (x, y),radius, (0, 255, 0), 2)
+        cv2.circle(frame, (x, y), radius, (0, 255, 0), 2)
         # Draw the center of the circle
         cv2.circle(frame, (x, y), 2, (0, 0, 255), 3)
 
@@ -96,7 +116,6 @@ def ImageAnalysis(frame):
         cv2.putText(frame, "Orange ball", label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         print(f"Orange Ball center coordinates: ({x}, {y}), Radius: {radius}")
-
 
     # If balls are found, draw them on the image
     if white_balls is not None:
@@ -130,7 +149,6 @@ def ImageAnalysis(frame):
     cv2.imshow('Objects Detected', frame)
     #  cv2.imshow('Blobs Detected', im_with_keypoints)
     # cv2.imshow('Undistorted', new_frame)
-
 
     # Gyroscope drift -skrottet
     # Ball pixel conversion - skrottet gns pixel radius og scale factor = diameter cm /diameters pixel

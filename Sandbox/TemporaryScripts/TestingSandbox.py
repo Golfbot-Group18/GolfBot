@@ -9,12 +9,12 @@ from src.Server.Components.CourseDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Robot_green2.jpg')
+image_path = os.path.join(script_dir, '..', 'Images', 'Refiner2.png')
 
 if __name__ == "__main__":
 
-    video = 1
-    image = 0
+    video = 0
+    image = 1
 
     if video == 1:
         ImageAnalysisOnVideo()

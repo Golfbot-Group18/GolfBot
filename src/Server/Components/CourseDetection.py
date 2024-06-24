@@ -7,6 +7,9 @@ from src.Server.Components.BallDetection import DetectOrangeBall
 from src.Server.Components.DetectionMethods import *
 from sklearn.cluster import DBSCAN
 
+from src.Server.Components.MainImageAnalysis import giveMeFrames
+from src.Server.Components.RobotDetection import euclidean_distance
+
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
 #script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -110,13 +113,48 @@ def giveMeCourseFramePoints(img):
 
             for i, point in enumerate(sorted_points):
                 cx, cy = point
-                cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0),1)
+                cv2.putText(img, f'({cx}, {cy})', (cx + 5, cy - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
 
             cv2.drawContours(img, [sorted_points], 0, (255, 0, 0), 2)
             print("Printing approximated points:", sorted_points)
-        cv2.imshow('Result', img)
+            cv2.imshow('Result', img)
+            return sorted_points
+        else:
+            return None
+    else:
+        return None
 
-    return None
+
+def giveMeGoalPoints(frame):  # 512
+    points = giveMeCourseFramePoints(frame)
+    if points is not None:
+        top_left = points[0]
+        top_right = points[1]
+        bottom_right = points[2]
+        bottom_left = points[3]
+
+        print("Printing points:")
+        print(top_left, top_right, bottom_right, bottom_left)
+
+        small_goal_center = 1  # euclidean_distance(top_left, top_right) * 0.512
+        big_goal_center = 1  # euclidean_distance(top_left, bottom_left) * 0.5
+
+        # small_goal_center_point = ((bottom_right[0] + top_right[0]) / 2, (bottom_right[1] + top_right[1]) / 2)
+        # big_goal_center_point = ((bottom_left[0] + top_left[0]) / 2, (bottom_left[1] + top_left[1]) / 2)
+        ts = 1 - 0.512  # percentage of length of the side length where center point is, for small goal- 51.2% of 125 cm
+        tb = 1 - 0.5  # same but big goal 50% of 125cm
+        small_goal_center_point = (
+            (1 - ts) * bottom_right[0] + ts * top_right[0],
+            (1 - ts) * bottom_right[1] + ts * top_right[1]
+        )
+
+        # If you also need to calculate for bottom_left and top_left at 51.2%
+        big_goal_center_point = (
+            (1 - tb) * bottom_left[0] + tb * top_left[0],
+            (1 - tb) * bottom_left[1] + tb * top_left[1]
+        )
+
+        return small_goal_center_point, big_goal_center_point
 
 
 def detect_color(img, color_range):
