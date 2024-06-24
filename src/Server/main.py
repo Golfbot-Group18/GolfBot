@@ -79,6 +79,7 @@ def detect_robot(frame):
     robot_base_position, robot_tip_position = Return_robot_position(frame)
     if robot_base_position is not None:
         return robot_base_position, robot_tip_position
+    print("Could not find robot position")
     return None, None
 
 def normalize_angle(angle):
@@ -132,7 +133,7 @@ def main():
 
     grid_img = visualize_grid(standard_grid, interval=10)
 
-    robot_width = 300
+    robot_width = 80
     buffer = 0
     required_clearance = (robot_width / 2 + buffer) / max_distance * 100
     min_clearance = required_clearance
@@ -202,15 +203,15 @@ def main():
             continue
             
 
-        #simplified_path = ramer_douglas_peucker(path, 10)
+        simplified_path = ramer_douglas_peucker(path, 100)
 
-        for point in path:
+        for point in simplified_path:
             center = (int(point[1] * 10), int(point[0] * 10))
-            cv2.circle(grid_img, center, 10, (0, 0, 255), 50) # Red
+            cv2.circle(grid_img, center, 10, (0, 255, 255), 50) # Red
 
-        print(f"Simplified path: {path}")
+        print(f"Simplified path: {simplified_path}")
         converted_path = []
-        for point in path:
+        for point in simplified_path:
             converted_point = (point[1], point[0])  # Swap the coordinates
             converted_path.append(converted_point)
 

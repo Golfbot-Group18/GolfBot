@@ -15,6 +15,7 @@ def DetectRobot(frame):
     if green_area is not None:
         return green_area
     else:
+        print("Could not find robot contour")
         return None
 
 
@@ -22,7 +23,7 @@ def euclidean_distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def CalculateRobotTriangle(contour):
+def  CalculateRobotTriangle(contour):
     # This function only works for a right-angled triangle on the robot
     # with precisely half the width of it in the middle
 
@@ -31,12 +32,13 @@ def CalculateRobotTriangle(contour):
     # width, height = rect[1]
 
     # Approximates and straightens the contour lines so that it extracts the vertices of the shape
-    epsilon = 0.02 * cv2.arcLength(contour, True)
+    epsilon = 0.05 * cv2.arcLength(contour, True)
     approximated_points = cv2.approxPolyDP(contour, epsilon, True)
 
     # If the approximation returns a list longer than 3,
     # it means that the shape is not a triangle as it has more than 3 sides
     if len(approximated_points) != 3:
+        print ("Approximated points are not a triangle")
         return None
     else:
         # Reshapes the way the data is stored

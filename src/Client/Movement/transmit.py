@@ -10,7 +10,7 @@ import math
 import time
 import random
 
-HOST = '172.20.10.3'  # Server IP address
+HOST = '192.168.197.108'  # Server IP address
 PORT = 12345  # Server port for receiving vectors
 CONFIRMATION_PORT = 12346  # Server port for sending confirmation
 AXLE_TRACK = 180  # Distance between the wheels
@@ -95,6 +95,12 @@ def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_d
             # Turn counterclockwise
             left_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
             right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=True)
+        print("Reflection seen in turn: ", color.reflection())
+        if color.reflection() >= 1:
+                print("Color sensor detected reflection value: {}".format(color.reflection()))
+                left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
+                right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
+                feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
 
         communicator.send_confirmation("update_heading")
         current_heading = round(communicator.receive_heading(), 1)
@@ -106,6 +112,7 @@ def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_d
 
         print("Turned to: {} degrees, remaining angle: {} degrees".format(current_heading, remaining_angle))
     print("Final heading: {}".format(current_heading))
+    return current_heading
 
 def check_color_sensor_stability(sensor, stable_value=1, check_duration=3, check_interval=0.1):
     print("Checking color sensor stability...")
@@ -117,29 +124,49 @@ def check_color_sensor_stability(sensor, stable_value=1, check_duration=3, check
         time.sleep(check_interval)
     return True
 
-def drive_distance_in_intervals(communicator, initial_position, target_position, gear_ratio, wheel_diameter, track_width, interval_distance=250, speed=200):
+def adjust_motor_speed(left_motor_speed, right_motor_speed, heading_error):
+    correction_factor = 1
+    if heading_error > 0:  # Robot is veering left, slow down left motor or speed up right motor
+        print("Heading error > 0 - Veering left")
+        left_motor_speed += min(heading_error * correction_factor, left_motor_speed - 10)  # Ensure speed doesn't go below a threshold
+        print("Left motor speed + : {}".format(left_motor_speed))
+        right_motor_speed -= min(heading_error * correction_factor, 1000 - right_motor_speed)  # Ensure speed doesn't exceed max
+        print("Right motor speed - : {}".format(right_motor_speed))
+    elif heading_error < 0:  # Robot is veering right, do the opposite
+        print("Heading error < 0 - Veering right")
+        left_motor_speed -= min(abs(heading_error) * correction_factor, 1000 - left_motor_speed)
+        print("Left motor speed - : {}".format(left_motor_speed))
+        right_motor_speed += min(abs(heading_error) * correction_factor, right_motor_speed - 10)
+        print("Right motor speed + : {}".format(right_motor_speed))
+    return left_motor_speed, right_motor_speed
+
+def drive_distance_in_intervals(communicator, initial_position, current_heading, target_position, gear_ratio, wheel_diameter, track_width, interval_distance=250, speed=200):
     print("Starting iterval drive...")
     remaining_distance = get_distance(initial_position, target_position)
     print("Initial position: {}, Target position: {}, Remaining distance: {}".format(initial_position, target_position, remaining_distance))
     current_position = initial_position
-    target_heading = calculate_target_heading(current_position, target_position)
+    target_heading = round(calculate_target_heading(current_position, target_position),1)
     print("Target heading: {}".format(target_heading))
     
     while remaining_distance > 100:
-        # Drive a small distance
         distance_to_drive = min(interval_distance, remaining_distance) #interval distance is in mm, remaining distance is in px
         wheel_circumference = math.pi * wheel_diameter
         rotations = distance_to_drive / wheel_circumference
         degrees = rotations * 360
 
+        print("Reflection seen in drive: ", color.reflection())
         print("Driving distance: {}, using degrees {}".format(distance_to_drive, degrees)) #this is in mm
-        left_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=False)
-        right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=False)
+        if color.reflection() >= 1:
+                print("Color sensor detected reflection value: {}".format(color.reflection()))
+                feed.run_time(speed=4000,time=5*1000, then= Stop.COAST, wait= False)
 
-        if color.reflection() == 1:
-            feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
-            left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
-            right_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
+        heading_error = normalize_angle(target_heading - current_heading)
+        print("Current Heading: {}, Heading error: {}".format(current_heading, heading_error))
+        adjusted_left_speed, adjusted_right_speed = adjust_motor_speed(speed, speed, heading_error)
+        print("Adjusted left speed: {}, Adjusted right speed: {}".format(adjusted_left_speed, adjusted_right_speed))
+
+        left_motor.run_angle(adjusted_left_speed, degrees, then=Stop.HOLD, wait=False)
+        right_motor.run_angle(adjusted_right_speed, degrees, then=Stop.HOLD, wait=True)
 
         # Request updated heading and position
         communicator.send_confirmation("update_position_and_heading")
@@ -217,24 +244,24 @@ while True:
     waypoints = data['waypoints_count']
     print("Received data: {}".format(data))
 
-    target_heading = calculate_target_heading(current_position, target_position)
+    target_heading = round(calculate_target_heading(current_position, target_position))
     print("Target heading: {}".format(target_heading))
-    turn_angle = normalize_angle(target_heading - current_heading)
+    turn_angle = round(normalize_angle(target_heading - current_heading))
     print("Turn angle: {}".format(turn_angle))
 
-    turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+    current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
     print("Turned to target heading")
     print("Init Driving to target position")
-    drive_distance_in_intervals(communicator, current_position, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+    drive_distance_in_intervals(communicator, current_position, current_heading, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
 
     print("Waypoint number: {}".format(waypoints))
     if waypoints > 1:
         communicator.send_confirmation("reached_waypoint")
         continue
     else:
-        feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
-        left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
-        right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
+        #feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
+        #left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
+        #right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
         communicator.send_confirmation("reached_goal")
         ev3.speaker.beep()
         continue
