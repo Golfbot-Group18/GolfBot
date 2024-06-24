@@ -34,7 +34,7 @@ def DetectAllBalls(frame, isolate_white_balls=False):
 
 
 def DetectOrangeBall(frame):
-    lower_orange = np.array([5, 100, 100])
+    lower_orange = np.array([5, 100, 150])
     upper_orange = np.array([15, 255, 255])
     min_area = 300
     max_area = 1000  # Adjust based on your specific case

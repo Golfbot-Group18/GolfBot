@@ -12,6 +12,7 @@ from Components.GridGeneration import generate_grid, visualize_grid, visualize_c
 from Pathfinding.Pathfinding import *
 from Utils.px_conversion import realCoordinates
 from Utils.path_conversion import *
+import multiprocessing
 
 ''' For this we need the 4 corner points!!! - right now they are hardcoded in the function'''
 def calculate_homography_matrix(source_points=None):
@@ -76,7 +77,7 @@ def detect_orange_ball(frame):
     return None
 
 def detect_robot(frame):
-    robot_base_position, robot_tip_position = Return_robot_position(frame)
+    robot_base_position, robot_tip_position = detect_robot(frame)
     if robot_base_position is not None:
         return robot_base_position, robot_tip_position
     print("Could not find robot position")
@@ -107,7 +108,7 @@ def update_robot_heading():
             robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position)
             robot_tip_position = realCoordinates(robot_height_cm, camera_height_cm, robot_tip_position)
 
-            robot_heading = Return_robot_heading(robot_base_position, robot_tip_position)
+            robot_heading = calculate_heading(robot_base_position, robot_tip_position)
             return robot_heading
 
 def update_robot_position():
@@ -156,8 +157,18 @@ def find_closest_ball_with_path(robot_base_position, flattened_ball_positions, c
     return None, None
 
 def main():
+    #frame = giveMeFrames()
+    #standard_grid, clearance_grid, max_distance, = process_initial_state(frame)
     frame = giveMeFrames()
-    standard_grid, clearance_grid, max_distance, = process_initial_state(frame)
+    num_processes = multiprocessing.cpu_count()
+
+    # Create a Pool of processes
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        # Process the frame in parallel
+        results = pool.apply(process_initial_state, args=(frame,))
+
+    # Unpack the results
+    standard_grid, clearance_grid, max_distance = results
 
     grid_img = visualize_grid(standard_grid, interval=10)
 
@@ -181,9 +192,15 @@ def main():
         if small_goal_center_point is None or big_goal_center_point is None:
             print("Could not find goal positions")  
             continue
-        
-        shifted_small_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, small_goal_center_point) # this returns in format (x, y)
-        shifted_big_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, big_goal_center_point) # this returns in format (x, y)
+        shifted_small_goal_center_point = small_goal_center_point
+        print(f"Small goal center point, (x,y): {shifted_small_goal_center_point}")
+        shifted_small_goal_center_point = (int(shifted_small_goal_center_point[0]-100), int(shifted_small_goal_center_point[1])) # this is in format (x,y)
+        print(f"Shifted small goal center point, (x,y): {shifted_small_goal_center_point}")
+        shifted_big_goal_center_point = big_goal_center_point
+        #shifted_small_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, small_goal_center_point) # this returns in format (x, y)
+        #shifted_small_goal_center_point = (int(shifted_small_goal_center_point[1]), int(shifted_small_goal_center_point[0])) # this is in format (y, x) 
+        #shifted_big_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, big_goal_center_point) # this returns in format (x, y)
+        shifted_big_goal_center_point = (int(shifted_big_goal_center_point[1]), int(shifted_big_goal_center_point[0])) # this is in format (y, x)
 
         robot_base_position, robot_tip_position = detect_robot(image)
 
@@ -191,7 +208,6 @@ def main():
             print("No robot detected keep looking")
             continue
 
-        print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
 
         robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position) # this returns in format (x, y)
         robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1])) # this returns in format (x, y)
@@ -205,7 +221,7 @@ def main():
         robot_tip_img = (int(robot_tip_position[0] * 10), int(robot_tip_position[1] * 10))
         cv2.circle(grid_img, robot_tip_img, 20, (0, 255, 0), 50) # Green
 
-        robot_heading = round(Return_robot_heading(robot_base_position, robot_tip_position),1) # this is in degrees
+        robot_heading = round(calculate_heading(robot_base_position, robot_tip_position),1) # this is in degrees
         print(f"Robot heading: {robot_heading}")
 
         ball_positions = detect_balls(image)
@@ -216,6 +232,8 @@ def main():
             print("No balls detected keep looking")
             continue
         
+        print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
+
         flattened_ball_positions = [(int(ball[0]), int(ball[1])) for ball_array in ball_positions for ball in ball_array]
         print(f"Flattened ball positions: {len(flattened_ball_positions)}")
 
@@ -270,13 +288,13 @@ def main():
             communicator.send_data(robot_base_position, robot_heading, simplified_path[iteration], len(simplified_path) - iteration)
             while True:
                 print("Waiting for request...")
-                confirmation = communicator.receive_confirmation()
-                if confirmation == "update_heading":
+                request = communicator.get_request()
+                if request == "update_heading":
                     robot_heading = update_robot_heading() # this is in degrees
                     robot_heading = (int(robot_heading))
                     print(f"Updated robot heading: {robot_heading}")
                     send_heading_to_robot(communicator, robot_heading)
-                elif confirmation == "update_position_and_heading":
+                elif request == "update_position_and_heading":
                     robot_base_position = update_robot_position()
                     robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
 
@@ -284,7 +302,7 @@ def main():
                     robot_heading = (int(robot_heading))
 
                     send_pos_head_to_robot(communicator, robot_base_position, robot_heading)
-                elif confirmation == "reached_waypoint":
+                elif request == "reached_waypoint":
                     print("Robot reached a waypoint.")
                     iteration += 1
                     robot_base_position = update_robot_position()
@@ -293,13 +311,18 @@ def main():
                     robot_heading = (int(robot_heading))
                     communicator.send_data(robot_base_position, robot_heading, simplified_path[iteration], len(simplified_path) - iteration)
                     continue
-                elif confirmation == "reached_goal":
+                elif request == "reached_goal":
                     print("Robot reached the goal.")
                     iteration = 1
                     break
-                elif confirmation == "go_to_goal":
+                elif request == "go_to_goal":
+                    iteration = 1
                     print("Robot is going to the goal.")
-                    path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, shifted_small_goal_center_point, min_clearance=1)
+                    robot_base_position = update_robot_position()
+                    robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1]))
+                    robot_heading = update_robot_heading()
+                    robot_heading = (int(robot_heading))
+                    path = a_star_fms_search(standard_grid, clearance_grid, (robot_base_position[1], robot_base_position[0]), (shifted_small_goal_center_point[1], shifted_small_goal_center_point[0]), min_clearance=0)
                     for point in path:
                         center = (int(point[1] * 10), int(point[0] * 10))
                         cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
@@ -319,8 +342,14 @@ def main():
                     simplified_path = converted_path
 
                     print(f"Path to closest ball: {simplified_path}")
-                    communicator.send_data(robot_base_position, robot_heading, simplified_path[1], len(simplified_path) - 1, True)
-                    break
+                    print(f"{len(simplified_path) - iteration} waypoints left to goal.")
+                    last_trip = False
+                    if len(simplified_path) - iteration == 1:
+                        last_trip = True
+                    cv2.imshow('Standard Grid', grid_img)
+                    cv2.waitKey(0)
+                    communicator.send_data(robot_base_position, robot_heading, simplified_path[iteration], len(simplified_path) - iteration, last_trip=last_trip)
+                    continue
                         
                         
 def send_heading_to_robot(communicator, current_heading):

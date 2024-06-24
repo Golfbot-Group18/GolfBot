@@ -8,32 +8,32 @@ from pybricks.tools import wait
 from pybricks.hubs import EV3Brick
 import math
 import time
-import random
+import threading
 
 HOST = '192.168.197.108'  # Server IP address
 PORT = 12345  # Server port for receiving vectors
-CONFIRMATION_PORT = 12346  # Server port for sending confirmation
+REQUEST_PORT = 12346  # Server port for sending confirmation
 AXLE_TRACK = 180  # Distance between the wheels
 WHEEL_DIAMETER = 55.5  # Diameter of the wheels
 GSPK = 3 # Gyro sensor proportional constant
 
 class RobotCommunicator:
-    def __init__(self, host, port, confirmation_port):
+    def __init__(self, host, port, request_port):
         self.host = host
         self.port = port
-        self.confirmation_port = confirmation_port
+        self.request_port = request_port
         self.socket = None
-        self.confirmation_socket = None
+        self.request_socket = None
 
     def connect_to_server(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
         print("Connected to server at {}:{}".format(self.host, self.port))
 
-    def connect_to_confirmation(self):
-        self.confirmation_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.confirmation_socket.connect((self.host, self.confirmation_port))
-        print("Connected to server for confirmation at {}:{}".format(self.host, self.confirmation_port))
+    def connect_to_request(self):
+        self.request_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.request_socket.connect((self.host, self.request_port))
+        print("Connected to server for request at {}:{}".format(self.host, self.request_port))
 
     def receive_data(self):
         data = self.socket.recv(1024).decode('utf-8')
@@ -48,13 +48,23 @@ class RobotCommunicator:
         message = self.socket.recv(1024).decode('utf-8')
         data = json.loads(message)
         return data
+    
+    def receive_front_clear(self):
+        message = self.socket.recv(1024).decode('utf-8')
+        data = json.loads(message)
+        return data['front_clear']
+    
+    def receive_backup_point(self):
+        message = self.socket.recv(1024).decode('utf-8')
+        data = json.loads(message)
+        return data['backup_point']
 
-    def send_confirmation(self, message):
-        self.confirmation_socket.sendall(message.encode('utf-8'))
-        print("Confirmation sent: {}".format(message))
+    def send_request(self, message):
+        self.request_socket.sendall(message.encode('utf-8'))
+        print("Request sent: {}".format(message))
 
 def get_heading(communicator):
-    communicator.send_confirmation("update_heading")
+    communicator.send_request("update_heading")
     new_heading = communicator.receive_heading()
     print("Heading received: {}".format(new_heading))
     return new_heading
@@ -72,6 +82,13 @@ def calculate_target_heading(current_position, target_position):
 def get_distance(current_position, target_position):
     """Calculate the Euclidean distance between two points."""
     return math.sqrt((current_position[0] - target_position[0])**2 + (current_position[1] - target_position[1])**2)
+
+def calculate_distance_and_heading(current_position, target_position):
+    dx = target_position[0] - current_position[0]
+    dy = target_position[1] - current_position[1]
+    distance = math.sqrt(dx**2 + dy**2)
+    heading = math.degrees(math.atan2(dy, dx))
+    return distance, heading
 
 def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_diameter, track_width, speed=150):
     current_heading = initial_heading
@@ -95,14 +112,8 @@ def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_d
             # Turn counterclockwise
             left_motor.run_angle(speed, -degrees, then=Stop.HOLD, wait=False)
             right_motor.run_angle(speed, degrees, then=Stop.HOLD, wait=True)
-        print("Reflection seen in turn: ", color.reflection())
-        if color.reflection() >= 1:
-                print("Color sensor detected reflection value: {}".format(color.reflection()))
-                left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
-                right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
-                feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
 
-        communicator.send_confirmation("update_heading")
+        communicator.send_request("update_heading")
         current_heading = round(communicator.receive_heading(), 1)
 
         actual_turn = normalize_angle(current_heading - initial_heading)
@@ -154,11 +165,7 @@ def drive_distance_in_intervals(communicator, initial_position, current_heading,
         rotations = distance_to_drive / wheel_circumference
         degrees = rotations * 360
 
-        print("Reflection seen in drive: ", color.reflection())
         print("Driving distance: {}, using degrees {}".format(distance_to_drive, degrees)) #this is in mm
-        if color.reflection() >= 1:
-                print("Color sensor detected reflection value: {}".format(color.reflection()))
-                feed.run_time(speed=4000,time=5*1000, then= Stop.COAST, wait= False)
 
         heading_error = normalize_angle(target_heading - current_heading)
         print("Current Heading: {}, Heading error: {}".format(current_heading, heading_error))
@@ -169,7 +176,7 @@ def drive_distance_in_intervals(communicator, initial_position, current_heading,
         right_motor.run_angle(adjusted_right_speed, degrees, then=Stop.HOLD, wait=True)
 
         # Request updated heading and position
-        communicator.send_confirmation("update_position_and_heading")
+        communicator.send_request("update_pos_and_heading")
         data = communicator.receive_position_and_heading()
         current_position = data['current_position']
         current_heading = data['current_heading']
@@ -188,25 +195,74 @@ def drive_distance_in_intervals(communicator, initial_position, current_heading,
 
     print("Final position: {}, Remaining distance: {} px".format(current_position, remaining_distance))
 
+def calculate_heading_diff(current_heading, target_heading):
+    heading_diff = target_heading - current_heading
+    return normalize_angle(heading_diff)
 
-def drive_distance_old(robot, distance, speed=100):
-    gyro.reset_angle(0)
-    if distance > 0:
-        while robot.distance() <= distance:
-            correction = (0 - gyro.angle()) * GSPK
-            robot.drive(speed, correction)
-            wait(10)
-        robot.stop()
-        left_motor.brake()
-        right_motor.brake()
-    else:
-        while robot.distance() <= distance:
-            correction = (0 - gyro.angle()) * GSPK
-            robot.drive(-speed, correction)
-            wait(10)
-        robot.stop()
-        left_motor.brake()
-        right_motor.brake()
+def is_target_behind(robot_position, robot_heading, target_position):
+    target_heading = math.degrees(math.atan2(target_position[1] - robot_position[1], target_position[0] - robot_position[0]))
+    heading_diff = calculate_heading_diff(robot_heading, target_heading)
+    if abs(heading_diff) > 90:
+        return True, heading_diff
+    return False, heading_diff
+
+def should_back_up(current_position, target_position, current_heading):
+    target_behind, heading_diff = is_target_behind(current_position, current_heading, target_position)
+    distance_to_target = get_distance(current_position, target_position)
+
+    if target_behind:
+        print(f"Target is behind the robot. Heading difference: {heading_diff}")
+
+        if distance_to_target < 100:
+            return False, heading_diff
+        
+        communicator.send_request("check_front_clear")
+        data = communicator.receive_data()
+        front_clear = data.get('front_clear', True)
+
+        if not front_clear:
+            print("Front is not clear, backing up.")
+            communicator.send_request("backup_point")
+            backup_point = communicator.receive_backup_point()
+            return True, backup_point
+
+    return False, None
+    
+def backup_to_point(communicator, current_position, current_heading, backup_point, gear_ratio, wheel_diameter, track_width, speed=100):
+    distance_to_backup_point, heading_to_backup_point = calculate_distance_and_heading(current_position, backup_point)
+    backup_heading = normalize_angle(heading_to_backup_point + 180)  # Reverse the heading for backing up
+
+    # Turn to face the backup direction
+    turn_angle = normalize_angle(backup_heading - current_heading)
+
+    while distance_to_backup_point > 50:  # Stop when within 10 units of the backup point
+        distance_to_drive = min(100, distance_to_backup_point)  # Adjust interval as needed
+        wheel_circumference = math.pi * wheel_diameter
+        rotations = distance_to_drive / wheel_circumference
+        degrees = rotations * 360 / gear_ratio
+
+        # Move backward
+        left_motor.run_angle(-speed, degrees, then=Stop.HOLD, wait=False)
+        right_motor.run_angle(-speed, degrees, then=Stop.HOLD, wait=True)
+
+        # Request updated position
+        communicator.send_confirmation("update_position_and_heading")
+        data = communicator.receive_position_and_heading()
+        current_position = data['current_position']
+        current_heading = data['current_heading']
+
+        # Recalculate the distance to the backup point
+        distance_to_backup_point, heading_to_backup_point = calculate_distance_and_heading(current_position, backup_point)
+        backup_heading = normalize_angle(heading_to_backup_point + 180)  # Reverse the heading for backing up
+
+        turn_angle = normalize_angle(backup_heading - current_heading)
+        if abs(turn_angle) > 3:  # Only adjust if the turn angle is significant
+            turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, wheel_diameter, track_width)
+
+        print("Current position: {}, Remaining distance: {}, Current heading: {}".format(current_position, distance_to_backup_point, current_heading))
+
+    print("Backup complete. Final position: {}".format(current_position))
+    return current_position, current_heading
 
 # Creating the Ev3 brick
 ev3 = EV3Brick()
@@ -228,12 +284,30 @@ robot = DriveBase(left_motor, right_motor, WHEEL_DIAMETER, AXLE_TRACK)
 feed = Motor(Port.C)
 color = ColorSensor(Port.S1)
 gyro = GyroSensor(Port.S2)
-touch = TouchSensor(Port.S3)
 
+feed_motor_running = False
 
-communicator = RobotCommunicator(HOST, PORT, CONFIRMATION_PORT)
+def color_sensor_thread():
+    global feed_motor_running
+    while True:
+            reflection = color.reflection()
+            #print("Color sensor reflection value: {}".format(reflection))
+            if reflection > 1 and not feed_motor_running:
+                print("Color sensor detected reflection >= 1")
+                feed_motor_running = True
+                feed.run_time(speed=4000, time=5000, then=Stop.COAST, wait=False)
+                left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
+                right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
+                feed_motor_running = False
+            time.sleep(0.1)
+
+communicator = RobotCommunicator(HOST, PORT, REQUEST_PORT)
 communicator.connect_to_server()
-communicator.connect_to_confirmation()
+communicator.connect_to_request()
+
+color_thread = threading.Thread(target=color_sensor_thread)
+color_thread.daemon = True
+color_thread.start()
 
 
 while True:
@@ -250,6 +324,12 @@ while True:
     turn_angle = round(normalize_angle(target_heading - current_heading))
     print("Turn angle: {}".format(turn_angle))
 
+    backup_needed, backup_info = should_back_up(current_position, target_position, current_heading, communicator)
+    if backup_needed:
+        print("Backing up...")
+        backup_point = backup_info
+
+
     current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
     print("Turned to target heading")
     print("Init Driving to target position")
@@ -257,16 +337,13 @@ while True:
 
     print("Waypoint number: {}".format(waypoints))
     if waypoints > 1:
-        communicator.send_confirmation("reached_waypoint")
+        communicator.send_request("reached_waypoint")
         continue
     if last_trip:
         feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
         break
     else:
-        #feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
-        #left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
-        #right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
-        communicator.send_confirmation("go_to_goal")
+        communicator.send_request("reached_ball_position")
         ev3.speaker.beep()
         continue
 

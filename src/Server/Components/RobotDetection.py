@@ -100,7 +100,7 @@ def CalculateRobotHeading(contour):
         return None
 
 
-def Return_robot_position(frame):
+def detect_robot(frame):
     robot_contour = DetectRobot(frame)
     if robot_contour is not None:
         robot_position_points = CalculateRobotHeading(robot_contour)
@@ -116,7 +116,7 @@ def Return_robot_position(frame):
         return None, None
 
 
-def Return_robot_heading(robot_base, robot_tip):
+def calculate_heading(robot_base, robot_tip):
     x_c, y_c = robot_base
     x_t, y_t = robot_tip
     
