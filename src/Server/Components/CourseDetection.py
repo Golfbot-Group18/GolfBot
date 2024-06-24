@@ -116,6 +116,38 @@ def giveMeCourseFramePoints(img):
         return None
 
 
+def giveMeGoalPoints(frame):
+    points = giveMeCourseFramePoints(frame)
+    if points is not None:
+        top_left = points[0]
+        top_right = points[1]
+        bottom_right = points[2]
+        bottom_left = points[3]
+
+        print("Printing points:")
+        print(top_left, top_right, bottom_right, bottom_left)
+
+        # ts and tb is the coefficient for how much the point is shifted to account for the goals
+        # being in the middle but slightly deviated from it, meaning it's not dead center
+
+        ts = 1 - 0.512  # percentage of length of the side length where center point is, for small goal- 51.2% of 125 cm
+        tb = 1 - 0.5  # same but big goal 50% of 125cm
+        small_goal_center_point = (
+            (1 - ts) * bottom_right[0] + ts * top_right[0],
+            (1 - ts) * bottom_right[1] + ts * top_right[1]
+        )
+
+        # If you also need to calculate for bottom_left and top_left at 51.2%
+        big_goal_center_point = (
+            (1 - tb) * bottom_left[0] + tb * top_left[0],
+            (1 - tb) * bottom_left[1] + tb * top_left[1]
+        )
+
+        return small_goal_center_point, big_goal_center_point
+    else:
+        return None
+
+
 def detect_color(img, color_range):
     mask = cv2.inRange(img, color_range[0], color_range[1])
     mask = cv2.dilate(mask, np.ones((5, 5), np.uint8), iterations=1)
