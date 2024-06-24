@@ -61,14 +61,15 @@ class RobotCommunicator:
         print(f"Received confirmation from robot: {confirmation}")
         return confirmation
     
-    def send_data(self, current_position, current_heading, target_position, vector_count):
+    def send_data(self, current_position, current_heading, target_position, vector_count, last_trip=False):
         current_position_list = list(current_position)
         target_position_list = list(target_position)
         data = {
             "current_position": current_position_list,
             "current_heading": float(current_heading),
             "target_position": target_position_list,
-            "waypoints_count": int(vector_count)
+            "waypoints_count": int(vector_count),
+            "last_trip": False
         }
         
         message = json.dumps(data)

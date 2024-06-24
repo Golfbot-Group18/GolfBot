@@ -242,6 +242,7 @@ while True:
     current_heading = data['current_heading']
     target_position = data['target_position']
     waypoints = data['waypoints_count']
+    last_trip = data['last_trip']
     print("Received data: {}".format(data))
 
     target_heading = round(calculate_target_heading(current_position, target_position))
@@ -258,11 +259,14 @@ while True:
     if waypoints > 1:
         communicator.send_confirmation("reached_waypoint")
         continue
+    if last_trip:
+        feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
+        break
     else:
         #feed.run_time(4000, 5000, then=Stop.HOLD, wait=False)
         #left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
         #right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
-        communicator.send_confirmation("reached_goal")
+        communicator.send_confirmation("go_to_goal")
         ev3.speaker.beep()
         continue
 

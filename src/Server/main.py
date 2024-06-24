@@ -7,7 +7,7 @@ from Components.RobotDetection import *
 from Components.MainImageAnalysis import *
 from Components.BallDetection import *
 from Camera.Calibration import CalibrateCamera
-from Components.CourseDetection import giveMeBinaryBitch, giveMeCourseFramePoints
+from Components.CourseDetection import *
 from Components.GridGeneration import generate_grid, visualize_grid, visualize_clearance_grid, visualize_grid_with_path, remove_x_from_grid, find_obstacle_coords, create_obstacle_grid, create_clearance_grid, analyze_clearance_grid
 from Pathfinding.Pathfinding import *
 from Utils.px_conversion import realCoordinates
@@ -90,6 +90,12 @@ def normalize_angle(angle):
         angle += 360
     return angle
 
+def get_goal_position(frame):
+    goal_positions = giveMeGoalPoints(frame)
+    if goal_positions is not None:
+        return goal_positions
+    return None
+
 def update_robot_heading():
     robot_height_cm = 21.8
     camera_height_cm = 165
@@ -127,6 +133,28 @@ def getDistance(desitnation: tuple, current: tuple)->float:
 
     return distance
 
+def find_closest_ball_with_path(robot_base_position, flattened_ball_positions, clearance_grid, standard_grid, min_clearance, camera_height_cm):
+
+    flattened_ball_positions.sort(key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
+    
+    for ball_position in flattened_ball_positions:
+        closest_ball_position = realCoordinates(4, camera_height_cm, ball_position)  # convert to real coordinates
+        closest_ball_updated_position = (int(closest_ball_position[1]), int(closest_ball_position[0]))  # format (y, x)
+        robot_base_updated_position = (robot_base_position[1], robot_base_position[0])  # format (y, x)
+
+        print(f"Trying to find path to ball at position: {closest_ball_position}")
+
+        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
+
+        if len(path) > 0:
+            print(f"Found path to ball at position: {closest_ball_position}")
+            return path, closest_ball_position
+        
+        print(f"No valid path found to ball at position: {closest_ball_position}")
+
+    print("No valid path found to any ball.")
+    return None, None
+
 def main():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance, = process_initial_state(frame)
@@ -141,21 +169,29 @@ def main():
     robot_height_cm = 21.8
     camera_height_cm = 165
 
+    course_height_cm = 7
+
     communicator = RobotCommunicator('0.0.0.0', 12345, 12346)
     communicator.listen_for_robot()
     communicator.listen_for_confirmation()
 
     while True:
         image = giveMeFrames()
+        small_goal_center_point, big_goal_center_point = get_goal_position(image) #this is in format (x,y)
+        if small_goal_center_point is None or big_goal_center_point is None:
+            print("Could not find goal positions")  
+            continue
+        
+        shifted_small_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, small_goal_center_point) # this returns in format (x, y)
+        shifted_big_goal_center_point = realCoordinates(course_height_cm, camera_height_cm, big_goal_center_point) # this returns in format (x, y)
+
         robot_base_position, robot_tip_position = detect_robot(image)
-        ball_positions = detect_balls(image)
-        #ball_positions = GetFixedBallPoints()
-        orange_ball = detect_orange_ball(image)
-        print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
 
         if robot_base_position is None:
             print("No robot detected keep looking")
             continue
+
+        print(f"Robot position (center point): {robot_base_position}    Robot heading point: {robot_tip_position}    Ball positions: {ball_positions}")
 
         robot_base_position = realCoordinates(robot_height_cm, camera_height_cm, robot_base_position) # this returns in format (x, y)
         robot_base_position = (int(robot_base_position[0]), int(robot_base_position[1])) # this returns in format (x, y)
@@ -169,12 +205,20 @@ def main():
         robot_tip_img = (int(robot_tip_position[0] * 10), int(robot_tip_position[1] * 10))
         cv2.circle(grid_img, robot_tip_img, 20, (0, 255, 0), 50) # Green
 
+        robot_heading = round(Return_robot_heading(robot_base_position, robot_tip_position),1) # this is in degrees
+        print(f"Robot heading: {robot_heading}")
+
+        ball_positions = detect_balls(image)
+        #ball_positions = GetFixedBallPoints()
+        orange_ball = detect_orange_ball(image)
+
         if ball_positions is None:
             print("No balls detected keep looking")
             continue
         
         flattened_ball_positions = [(int(ball[0]), int(ball[1])) for ball_array in ball_positions for ball in ball_array]
-        
+        print(f"Flattened ball positions: {len(flattened_ball_positions)}")
+
         if orange_ball is not None:
             closest_ball_position = (int(orange_ball[0]), int(orange_ball[1]))
             print(f"Closest ball is the orange ball at position: {closest_ball_position}")
@@ -182,26 +226,24 @@ def main():
             closest_ball_position = min(flattened_ball_positions, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base_position)))
             print(f"Closest ball is the ball at position: {closest_ball_position}")
 
-        closest_ball_position = realCoordinates(4, camera_height_cm, closest_ball_position) # this returns in format (x, y)
+        #closest_ball_position = realCoordinates(4, camera_height_cm, closest_ball_position) # this returns in format (x, y)
 
-        closest_ball_updated_position = (int(closest_ball_position[1]), int(closest_ball_position[0])) # this is in format (y, x)
+        #closest_ball_updated_position = (int(closest_ball_position[1]), int(closest_ball_position[0])) # this is in format (y, x)
 
-        robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
+        #robot_base_updated_position = (robot_base_position[1], robot_base_position[0]) # this is in format (y, x)   
 
-        robot_heading = round(Return_robot_heading(robot_base_position, robot_tip_position),1) # this is in degrees
-        print(f"Robot heading: {robot_heading}")
+        path, closest_ball_position = find_closest_ball_with_path(robot_base_position, flattened_ball_positions, clearance_grid, standard_grid, min_clearance, camera_height_cm)
 
-        path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
+        #path = a_star_fms_search(standard_grid, clearance_grid, robot_base_updated_position, closest_ball_updated_position, min_clearance)
 
         for point in path:
             center = (int(point[1] * 10), int(point[0] * 10))
             cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
 
-        if len(path) == 0:
-            print("No valid path found to closest ball, keep looking.") 
+        #if len(path) == 0:
+            #print("No valid path found to closest ball, keep looking.") 
             #better error handling here - not implemented the functions for edge balls either - will do later.
-            continue
-            
+            #continue
 
         simplified_path = ramer_douglas_peucker(path, 100)
 
@@ -254,6 +296,30 @@ def main():
                 elif confirmation == "reached_goal":
                     print("Robot reached the goal.")
                     iteration = 1
+                    break
+                elif confirmation == "go_to_goal":
+                    print("Robot is going to the goal.")
+                    path = a_star_fms_search(standard_grid, clearance_grid, robot_base_position, shifted_small_goal_center_point, min_clearance=1)
+                    for point in path:
+                        center = (int(point[1] * 10), int(point[0] * 10))
+                        cv2.circle(grid_img, center, 10, (0, 0, 255), 50)
+                    
+                    simplified_path = ramer_douglas_peucker(path, 100)
+
+                    for point in simplified_path:
+                        center = (int(point[1] * 10), int(point[0] * 10))
+                        cv2.circle(grid_img, center, 10, (0, 255, 255), 50) # Red
+
+                    print(f"Simplified path: {simplified_path}")
+                    converted_path = []
+                    for point in simplified_path:
+                        converted_point = (point[1], point[0])  # Swap the coordinates
+                        converted_path.append(converted_point)
+
+                    simplified_path = converted_path
+
+                    print(f"Path to closest ball: {simplified_path}")
+                    communicator.send_data(robot_base_position, robot_heading, simplified_path[1], len(simplified_path) - 1, True)
                     break
                         
                         
