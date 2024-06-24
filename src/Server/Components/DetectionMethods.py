@@ -32,10 +32,10 @@ def DetectEllipse(frame, min_ellipse_size, max_ellipse_size, min_canny_threshold
     return ellipse_contours, canny_image
 
 
-def DetectBallContour(frame, min_area, max_area, lower_color, upper_color):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+def DetectBallContour(min_area, max_area, mask):
+    # hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     # Threshold the HSV image to get only orange colors
-    mask = cv2.inRange(hsv, lower_color, upper_color)
+    # mask = cv2.inRange(hsv, lower_color, upper_color)
 
     # Find contours
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
