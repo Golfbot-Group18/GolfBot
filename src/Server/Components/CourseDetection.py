@@ -81,7 +81,10 @@ def giveMeCourseFramePoints(img):
         approximated_points = cv2.approxPolyDP(hull, epsilon, True)
 
         def sort_vertices(vertices):
-            vertices = vertices.reshape((4, 2))
+            try:
+                vertices = vertices.reshape((4, 2))
+            except ValueError:
+                return None
             sorted_vertices = sorted(vertices, key=lambda y: y[0])
             left_points = sorted(sorted_vertices[:2], key=lambda y: y[1])
             right_points = sorted(sorted_vertices[2:], key=lambda y: y[1])
