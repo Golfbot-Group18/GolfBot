@@ -103,7 +103,10 @@ def giveMeCourseFramePoints(img):
         if len(approximated_points) == 4:
             # Sort the points
             def sort_vertices(vertices):
-                vertices = vertices.reshape((4, 2))
+                try:
+                    vertices = vertices.reshape((4, 2))
+                except ValueError:
+                    return None
                 sorted_vertices = sorted(vertices, key=lambda y: y[0])
                 left_points = sorted(sorted_vertices[:2], key=lambda y: y[1])
                 right_points = sorted(sorted_vertices[2:], key=lambda y: y[1])
@@ -153,10 +156,12 @@ def giveMeGoalPoints(frame):  # 512
             (1 - tb) * bottom_left[0] + tb * top_left[0],
             (1 - tb) * bottom_left[1] + tb * top_left[1]
         )
-
-        return small_goal_center_point, big_goal_center_point
+        if small_goal_center_point is not None and big_goal_center_point is not None:
+            return small_goal_center_point, big_goal_center_point
+        else:
+            return None, None
     else:
-        return None
+        return None, None
 
 
 def detect_color(img, color_range):

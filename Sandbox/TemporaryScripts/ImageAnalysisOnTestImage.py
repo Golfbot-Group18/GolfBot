@@ -10,6 +10,16 @@ from src.Server.Components.RobotDetection import *
 from src.Server.Components.DetectionMethods import *
 from src.Server.Components.CourseDetection import *
 from src.Server.main import *
+import multiprocessing
+
+
+def processfr(frame, binary, eggs):
+    standard_grid = generate_grid(binary, interval=1)
+    obstacle_coords = find_obstacle_coords(standard_grid)
+    obstacle_grid = create_obstacle_grid(obstacle_coords, standard_grid.shape)
+    obstacle_grid = add_contour_to_obstacle_grid(obstacle_grid, eggs)
+    grid_img = visualize_grid(obstacle_grid, interval=10)
+    return grid_img
 
 
 def ImageAnalysisOnTestImage(image_path):
@@ -58,20 +68,15 @@ def ImageAnalysis(frame):
         print(big_goal_center_point)
         big_goal_center_point = np.uint16(np.around(big_goal_center_point))
         sx, sy = big_goal_center_point
-        cv2.circle(frame, (sx,sy), 5, (0, 0, 255), -1)
+        cv2.circle(frame, (sx, sy), 5, (0, 0, 255), -1)
         cv2.putText(frame, "big goal", (sx, sy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     backend = cv2.getBuildInformation()
-    print("Metal" in backend)
+    print(backend)
 
-    '''
-    standard_grid = generate_grid(binary, interval=1)
-    obstacle_coords = find_obstacle_coords(standard_grid)
-    obstacle_grid = create_obstacle_grid(obstacle_coords, standard_grid.shape)
-    obstacle_grid = add_contour_to_obstacle_grid(obstacle_grid, eggs)
-    grid_img = visualize_grid(obstacle_grid, interval=10)
-    cv2.imshow("grid", grid_img)
-    '''
+
+
+    # cv2.imshow("grid", grid_img)
 
     # im_with_keypoints = cv2.drawKeypoints(frame, eggs, np.array([]), (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # rect = cv2.minAreaRect(green_area)

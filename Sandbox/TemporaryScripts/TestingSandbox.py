@@ -13,8 +13,8 @@ image_path = os.path.join(script_dir, '..', 'Images', 'Refiner2.png')
 
 if __name__ == "__main__":
 
-    video = 1
-    image = 0
+    video = 0
+    image = 1
 
     if video == 1:
         ImageAnalysisOnVideo()

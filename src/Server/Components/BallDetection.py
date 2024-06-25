@@ -47,9 +47,9 @@ def OldDetectOrangeBall(frame):
 
     return None
 
-
+''''
 def DetectOrangeBall(frame):
-    lower_orange = np.array([5, 100, 100])
+    lower_orange = np.array([5, 100, 150])
     upper_orange = np.array([25, 255, 255])
 
     # lower_orange = np.array([5, 100, 100])
@@ -61,6 +61,60 @@ def DetectOrangeBall(frame):
     orange_ball = detectionMethods.DetectBallContour(frame, min_area, max_area, lower_orange, upper_orange)
 
     return orange_ball
+'''
+
+def DetectOrangeBall(frame):
+    # Define the broader range for the color orange in HSV color space
+    lower_orange = np.array([0, 150, 150])
+    upper_orange = np.array([10, 255, 255])
+
+    lower_orange1 = np.array([15, 150, 150])
+    upper_orange1 = np.array([25, 255, 255])
+
+    # Define the border range for the color yellow in HSV color space
+    lower_yellow = np.array([25, 150, 150])
+    upper_yellow = np.array([35, 255, 255])
+
+    # Convert the frame to HSV color space
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Create masks for the different shades of orange
+    mask1 = cv2.inRange(hsv_frame, lower_orange, upper_orange)
+    mask2 = cv2.inRange(hsv_frame, lower_orange1, upper_orange1)
+    mask3 = cv2.inRange(hsv_frame, lower_yellow, upper_yellow)
+
+    # Combine the masks
+    mask = cv2.bitwise_or(mask1, mask2)
+    mask = cv2.bitwise_or(mask, mask3)
+
+    # Perform morphological operations to reduce noise
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.erode(mask, kernel, iterations=1)
+    mask = cv2.dilate(mask, kernel, iterations=2)
+    cv2.imshow("mask", mask)
+
+    # lower_orange = np.array([5, 100, 100])
+    # upper_orange = np.array([28, 255, 255])
+    # Find contours in the mask
+
+    # contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    min_area = 100
+    max_area = 1000  # Adjust based on your specific case
+    orange_ball = detectionMethods.DetectBallContour(min_area, max_area, mask)
+    return orange_ball
+
+   # return orange_ball
+''''
+    filtered_contours = []
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if min_area < area < max_area:
+            filtered_contours.append(contour)
+
+    return filtered_contours
+'''
+
 
 
 def WhereIsTheOrangeBall(balls, orange_ball_contour):
