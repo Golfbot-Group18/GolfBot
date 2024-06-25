@@ -9,6 +9,7 @@ from Components.EggDetection import *
 from Pathfinding.Pathfinding import *
 from Utils.px_conversion import realCoordinates
 import multiprocessing
+import random
 
 HOST = '0.0.0.0'
 PORT = 12345
@@ -34,6 +35,12 @@ def initialize_course_processing():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance = look_for_obstacles(frame)
     small_goal_coord, big_goal_coord = giveMeGoalPoints(frame)
+    
+    if small_goal_coord is None or big_goal_coord is None:
+        print("No goal points detected.")
+        frame = giveMeFrames()
+        small_goal_coord, big_goal_coord = giveMeGoalPoints(frame)
+        return None, None
     corner_points = giveMeCourseFramePoints(frame)
     return standard_grid, clearance_grid, max_distance, small_goal_coord, big_goal_coord, corner_points
     
@@ -105,7 +112,7 @@ def updated_pos_and_heading():
 def swap_coordinates(point):
     return (point[1], point[0]) 
 
-def get_safe_points(grid, corners, clearance_threshold=40):
+def get_safe_points(grid, corners, clearance_threshold=40, points_per_quadrant=2):
     top_left = corners[0]
     top_right = corners[1]
     bottom_right = corners[2]
@@ -125,10 +132,18 @@ def get_safe_points(grid, corners, clearance_threshold=40):
     ]
 
     for (x_start, y_start, x_end, y_end) in quadrants:
-        for y in range(y_start, y_end):
-            for x in range(x_start, x_end):
-                if grid[y][x] >= clearance_threshold:
-                    safe_points.append((x, y))
+        region_width = (x_end - x_start) // points_per_quadrant
+        region_height = (y_end - y_start) // points_per_quadrant
+
+        for i in range(points_per_quadrant):
+            for j in range(points_per_quadrant):
+                region_safe_points = [
+                    (x, y) for y in range(y_start + j * region_height, y_start + (j + 1) * region_height)
+                    for x in range(x_start + i * region_width, x_start + (i + 1) * region_width)
+                    if grid[y][x] >= clearance_threshold
+                ]
+                if region_safe_points:
+                    safe_points.append(random.choice(region_safe_points))
     
     return safe_points
 
@@ -313,8 +328,8 @@ def main():
         elif orange_ball is not None:
             closest_ball = orange_ball  # in (x, y)
             print("Orange ball detected at: ", closest_ball)
-            balls.append(closest_ball)  # Ensure the orange ball is included in the ball list
-            path, closest_ball = find_closest_ball_with_path(base, balls, clearance_grid, standard_grid, MIN_CLEARANCE, points=corner_points)
+            orange_ball = [orange_ball] 
+            path, closest_ball = find_closest_ball_with_path(base, orange_ball, clearance_grid, standard_grid, MIN_CLEARANCE, points=corner_points)
    
         else:
             closest_ball_position = min(balls, key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base)))

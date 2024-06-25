@@ -148,7 +148,7 @@ def giveMeGoalPoints(frame):
 
         return small_goal_center_point, big_goal_center_point
     else:
-        return None
+        return None, None
 
 
 def detect_color(img, color_range):

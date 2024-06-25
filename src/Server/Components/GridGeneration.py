@@ -3,14 +3,33 @@ import cv2
 from shapely.geometry import Polygon
 from scipy import ndimage
 from Components.EggDetection import DetectEgg
+from Components.MainImageAnalysis import giveMeFrames
 from Utils.px_conversion import realCoordinates
 
-'''This function generates a grid from a binary image. The grid is a 2D list'''
+def generate_grid(binary_image, interval=1):
+    height, width = binary_image.shape
+    grid = []
+    for y in range(0, height, interval):
+        row = []
+        for x in range(0, width, interval):
+            cell = binary_image[y:y + interval, x:x + interval]
+            if np.any(cell == 255):  #Hvid er en forhindring.
+                row.append(1)
+            else:
+                row.append(0)
+        grid.append(row)
+    return np.array(grid)
+
+
+'''This function generates a grid from a binary image. The grid is a 2D list
 def generate_grid(binary_image, frame, camera_height=165, interval=1):
     height, width = binary_image.shape
     grid = []
     gridCopy = []
     egg = DetectEgg(frame)
+    print("Egg detected")
+
+
     
     #xpoints = np.array([])
     #ypoints = np.array([])
@@ -149,7 +168,7 @@ def generate_grid(binary_image, frame, camera_height=165, interval=1):
     # and also the cross height impact should be miniscule as it 
     # should be close to center and is only 3.05 cm in height
 
-    '''
+
     # This is shifting the cross
     print("Shifting cross")
     for x in range(500,1500):
@@ -172,7 +191,7 @@ def generate_grid(binary_image, frame, camera_height=165, interval=1):
 
     xpoints = np.array([])
     ypoints = np.array([])
-    '''
+
 
 
 
@@ -191,13 +210,11 @@ def generate_grid(binary_image, frame, camera_height=165, interval=1):
             gridCopy[int(shiftY)][int(shiftX)] = 1
         except:
             print("Unable to shift out of frame") 
-
         
     
     #plt.plot(xpoints, ypoints, 'o')
     #plt.show()
 
-    '''
 
     xpoints = np.array([])
     ypoints = np.array([])
@@ -228,10 +245,9 @@ def generate_grid(binary_image, frame, camera_height=165, interval=1):
     plt.plot(xpoints, ypoints, 'o')
     plt.show()
 
-    '''
-    
     print("Grid generated")
     return np.array(gridCopy)
+'''
 
 '''This function takes a list of points refering to obstacles and creates a grid with 1s at the obstacle points and 0s elsewhere.'''
 def create_obstacle_grid(obstacle_points, grid_shape):

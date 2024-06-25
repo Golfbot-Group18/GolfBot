@@ -10,7 +10,7 @@ import math
 import time
 import threading
 
-HOST = '172.20.10.3'  # Server IP address
+HOST = '192.168.197.108'  # Server IP address
 PORT = 12345  # Server port for receiving vectors
 REQUEST_PORT = 12346  # Server port for sending confirmation
 AXLE_TRACK = 180  # Distance between the wheels
@@ -296,7 +296,7 @@ color = ColorSensor(Port.S1)
 feed_motor_running = False
 color_sensor_triggered = False
 running = True
-def color_sensor_thread():
+def color_sensor_thread(communicator):
     global feed_motor_running, color_sensor_triggered, running
     while running:
         reflection = color.reflection()
@@ -309,6 +309,8 @@ def color_sensor_thread():
             left_motor.run_time(100, 1000, then=Stop.HOLD, wait=False)
             right_motor.run_time(100, 10000, then=Stop.HOLD, wait=True)
             feed_motor_running = False
+            communicator.send_request("reached_ball_position")
+            ev3.speaker.beep()
         time.sleep(0.1)
 
 
@@ -316,7 +318,7 @@ communicator = RobotCommunicator(HOST, PORT, REQUEST_PORT)
 communicator.connect_to_server()
 communicator.connect_to_request()
 
-color_thread = threading.Thread(target=color_sensor_thread)
+color_thread = threading.Thread(target=color_sensor_thread, args=(communicator,))
 color_thread.daemon = True
 color_thread.start()
 
@@ -337,52 +339,48 @@ while True:
     shifted = data.get('shifted', False)
     last_trip = data.get('last_trip', False)
 
-    backup_needed, backup_info = should_back_up(communicator, current_position, target_position, current_heading)
-    if backup_needed:
-        print("Backing up...")
-        backup_point = backup_info
-        current_position, current_heading = backup_to_point(communicator, current_position, current_heading, backup_point, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-    
-    target_heading = round(calculate_target_heading(current_position, target_position))
-    print("Target heading: {}".format(target_heading))
-    turn_angle = round(normalize_angle(target_heading - current_heading))
-    print("Turn angle: {}".format(turn_angle))
-
-    current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-    print("Turned to target heading")
-    print("Init Driving to target position")
-    drive_distance_in_intervals(communicator, current_position, current_heading, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-
-    print("Waypoint number: {}".format(waypoints))
-    if color_sensor_triggered:
-        communicator.send_request("reached_ball_position")
-        ev3.speaker.beep()
-        color_sensor_triggered = False
-        continue
-    if shifted and waypoints == 1:
-        target_heading = round(calculate_target_heading(current_position, old_target))
+    while not color_sensor_triggered:
+        backup_needed, backup_info = should_back_up(communicator, current_position, target_position, current_heading)
+        if backup_needed:
+            print("Backing up...")
+            backup_point = backup_info
+            current_position, current_heading = backup_to_point(communicator, current_position, current_heading, backup_point, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+        
+        target_heading = round(calculate_target_heading(current_position, target_position))
         print("Target heading: {}".format(target_heading))
         turn_angle = round(normalize_angle(target_heading - current_heading))
         print("Turn angle: {}".format(turn_angle))
+
         current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
         print("Turned to target heading")
         print("Init Driving to target position")
-        drive_distance_in_intervals(communicator, current_position, current_heading, old_target, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-        continue
-    if waypoints > 1:
-        communicator.send_request("reached_waypoint")
-        continue
-    if last_trip:
-        goal_heading = 0.0
-        final_turn_angle = round(normalize_angle(goal_heading - current_heading))
-        current_heading = turn_by_angle(communicator, current_heading, final_turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-        true_position = (target_position[0] + 50, target_position[1])
-        drive_distance_in_intervals(communicator, current_position, current_heading, true_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-        running = False
-        feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
-        break
-    else:
-        communicator.send_request("reached_ball_position")
-        ev3.speaker.beep()
-        continue
+        drive_distance_in_intervals(communicator, current_position, current_heading, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+
+        print("Waypoint number: {}".format(waypoints))
+        if shifted and waypoints == 1:
+            target_heading = round(calculate_target_heading(current_position, old_target))
+            print("Target heading: {}".format(target_heading))
+            turn_angle = round(normalize_angle(target_heading - current_heading))
+            print("Turn angle: {}".format(turn_angle))
+            current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            print("Turned to target heading")
+            print("Init Driving to target position")
+            drive_distance_in_intervals(communicator, current_position, current_heading, old_target, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            continue
+        if waypoints > 1:
+            communicator.send_request("reached_waypoint")
+            continue
+        if last_trip:
+            goal_heading = 0.0
+            final_turn_angle = round(normalize_angle(goal_heading - current_heading))
+            current_heading = turn_by_angle(communicator, current_heading, final_turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            true_position = (target_position[0] + 50, target_position[1])
+            drive_distance_in_intervals(communicator, current_position, current_heading, true_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            running = False
+            feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
+            break
+        else:
+            communicator.send_request("reached_ball_position")
+            ev3.speaker.beep()
+            continue
 

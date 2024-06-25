@@ -63,7 +63,7 @@ def DetectOrangeBall(frame):
     mask = cv2.dilate(mask, kernel, iterations=2)
     cv2.imshow("mask", mask)
 
-    min_area = 100
+    min_area = 300
     max_area = 1000  # Adjust based on your specific case
     orange_ball = DetectBallContour(min_area, max_area, mask)
     return orange_ball
