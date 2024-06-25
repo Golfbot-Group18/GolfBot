@@ -34,15 +34,39 @@ def DetectAllBalls(frame, isolate_white_balls=False):
 
 
 def DetectOrangeBall(frame):
-    lower_orange = np.array([5, 100, 150])
-    upper_orange = np.array([15, 255, 255])
-    min_area = 300
+    # Define the broader range for the color orange in HSV color space
+    lower_orange = np.array([0, 150, 150])
+    upper_orange = np.array([10, 255, 255])
+
+    lower_orange1 = np.array([15, 150, 150])
+    upper_orange1 = np.array([25, 255, 255])
+
+    # Define the border range for the color yellow in HSV color space
+    lower_yellow = np.array([25, 150, 150])
+    upper_yellow = np.array([35, 255, 255])
+
+    # Convert the frame to HSV color space
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Create masks for the different shades of orange
+    mask1 = cv2.inRange(hsv_frame, lower_orange, upper_orange)
+    mask2 = cv2.inRange(hsv_frame, lower_orange1, upper_orange1)
+    mask3 = cv2.inRange(hsv_frame, lower_yellow, upper_yellow)
+
+    # Combine the masks
+    mask = cv2.bitwise_or(mask1, mask2)
+    mask = cv2.bitwise_or(mask, mask3)
+
+    # Perform morphological operations to reduce noise
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.erode(mask, kernel, iterations=1)
+    mask = cv2.dilate(mask, kernel, iterations=2)
+    cv2.imshow("mask", mask)
+
+    min_area = 100
     max_area = 1000  # Adjust based on your specific case
-
-    orange_ball = DetectBallContour(frame, min_area, max_area, lower_orange, upper_orange)
-
+    orange_ball = DetectBallContour(min_area, max_area, mask)
     return orange_ball
-
 
 def WhereIsTheOrangeBall(balls, orange_ball_contour):
     if balls is not None:

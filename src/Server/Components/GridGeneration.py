@@ -2,21 +2,236 @@ import numpy as np
 import cv2
 from shapely.geometry import Polygon
 from scipy import ndimage
+from Components.EggDetection import DetectEgg
+from Utils.px_conversion import realCoordinates
 
 '''This function generates a grid from a binary image. The grid is a 2D list'''
-def generate_grid(binary_image, interval=1):
+def generate_grid(binary_image, frame, camera_height=165, interval=1):
     height, width = binary_image.shape
     grid = []
+    gridCopy = []
+    egg = DetectEgg(frame)
+    
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+
+
+    # This now makes to lists; 
+    # one for the grid of everything
+    # a second which is a copy of it, which we will modify
+
+    print("Generating the grid")
+    #print("Finding the entire grid and the copy")
     for y in range(0, height, interval):
         row = []
+        gridCopyRow = []
+
         for x in range(0, width, interval):
             cell = binary_image[y:y + interval, x:x + interval]
+
             if np.any(cell == 255):  #Hvid er en forhindring.
                 row.append(1)
+                gridCopyRow.append(1)
+                #xpoints = np.append(xpoints,x)
+                #ypoints = np.append(ypoints,y)
             else:
                 row.append(0)
+                gridCopyRow.append(0)
+                               
         grid.append(row)
-    return np.array(grid)
+        gridCopy.append(gridCopyRow)
+    
+    # Now I have a copy that I will modify while scovering the 
+    # original one
+
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+    
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+
+    
+    # Shifting top part of frame
+    #print("Shifting top of frame")
+    for x in range(0,len(grid[0])-1):
+        for y in range (850,len(grid)-1):
+            if(grid[y][x] == 1):
+                shiftX, shiftY = realCoordinates(7.03,camera_height, (x,y))
+                #xpoints = np.append(xpoints,shiftX)
+                #ypoints = np.append(ypoints,shiftY)
+                try:
+                    gridCopy[y][x] = 0
+                    gridCopy[int(shiftY)][int(shiftX)] = 1
+                    
+                except:
+                    print("Unable to shift out of track")
+    
+    
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+    
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+    
+
+    
+    # Shifting bottom part of frame
+    #print("Shifting bottom of frame")
+    for x in range(0,len(grid[0])-1):
+        for y in range (0,150):
+            if(grid[y][x] == 1):
+                shiftX, shiftY = realCoordinates(7.03,camera_height, (x,y))
+                #xpoints = np.append(xpoints,shiftX)
+                #ypoints = np.append(ypoints,shiftY)
+                try:
+                    gridCopy[y][x] = 0
+                    gridCopy[int(shiftY)][int(shiftX)] = 1
+                    
+                except:
+                    print("Unable to shift out of frame")
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+    
+
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+
+    
+    # Shifting left part of frame
+    #print("Shifting left of frame")
+    for x in range(0,500):
+        for y in range (0,len(grid)-1):
+            if(grid[y][x] == 1):
+                shiftX, shiftY = realCoordinates(7.03,camera_height, (x,y))
+                #xpoints = np.append(xpoints,shiftX)
+                #ypoints = np.append(ypoints,shiftY)
+                try:
+                    gridCopy[y][x] = 0
+                    gridCopy[int(shiftY)][int(shiftX)] = 1
+                    
+                except:
+                    print("Unable to shift out of frame")
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+    
+
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+
+    
+    # Shifting right part of frame
+    #print("Shifting right of frame")
+    for x in range(1500,len(grid[0])-1):
+        for y in range (0,len(grid)-1):
+            if(grid[y][x] == 1):
+                shiftX, shiftY = realCoordinates(7.03,camera_height, (x,y))
+                #xpoints = np.append(xpoints,shiftX)
+                #ypoints = np.append(ypoints,shiftY)
+                try:
+                    gridCopy[y][x] = 0
+                    gridCopy[int(shiftY)][int(shiftX)] = 1
+                    
+                except:
+                    print("Unable to shift out of frame")
+
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+
+    # Then all the coordinates of the frame should have been shifted
+
+
+
+    #xpoints = np.array([])
+    #ypoints = np.array([])
+
+
+    # Not shifting the cross as it does some weird distortion
+    # and also the cross height impact should be miniscule as it 
+    # should be close to center and is only 3.05 cm in height
+
+    '''
+    # This is shifting the cross
+    print("Shifting cross")
+    for x in range(500,1500):
+        for y in range(150, 800):
+            if(grid[y][x] == 1):
+                #Shift operation here
+                # This is the height of the cross, camera height and the point.
+                shiftX, shiftY = realCoordinates(3.05,165, (x,y))
+                xpoints = np.append(xpoints,shiftX)
+                ypoints = np.append(ypoints,shiftY)
+                try: 
+                    gridCopy[y][x] = 0
+                    gridCopy[int(shiftY)][int(shiftX)] = 1
+                    
+                except:
+                    print("Unable to shift out of frame")
+
+    plt.plot(xpoints, ypoints, 'o')
+    plt.show()
+
+    xpoints = np.array([])
+    ypoints = np.array([])
+    '''
+
+
+
+    # Need to insert the egg
+
+    # Inserting the contour of the egg to both original grid and copy
+    # And shifting it at the same time
+
+    #print("Inserting the egg")
+    for point in egg[0]:
+        shiftX, shiftY = realCoordinates(6.68,camera_height, (point[0],point[1]))
+        #xpoints = np.append(xpoints,shiftX)
+        #ypoints = np.append(ypoints,shiftY)
+        try: 
+            grid[point[1]][point[0]] = 1
+            gridCopy[int(shiftY)][int(shiftX)] = 1
+        except:
+            print("Unable to shift out of frame") 
+
+        
+    
+    #plt.plot(xpoints, ypoints, 'o')
+    #plt.show()
+
+    '''
+
+    xpoints = np.array([])
+    ypoints = np.array([])
+
+    print("Not Shifted")
+    # plotting the original grid (with egg)
+    for x in range(0,len(gridCopy[0])):
+        for y in range(0,len(gridCopy)):
+            if(gridCopy[y][x] == 1):
+                xpoints = np.append(xpoints,x)
+                ypoints = np.append(ypoints,y)
+
+    plt.plot(xpoints, ypoints, 'o')
+    plt.show()
+
+    
+    xpoints = np.array([])
+    ypoints = np.array([])
+
+    print("Final product")
+    # plotting the shifted grid
+    for x in range(0,len(gridCopy[0])):
+        for y in range(0,len(gridCopy)):
+            if(gridCopy[y][x] == 1):
+                xpoints = np.append(xpoints,x)
+                ypoints = np.append(ypoints,y)
+
+    plt.plot(xpoints, ypoints, 'o')
+    plt.show()
+
+    '''
+    
+    print("Grid generated")
+    return np.array(gridCopy)
 
 '''This function takes a list of points refering to obstacles and creates a grid with 1s at the obstacle points and 0s elsewhere.'''
 def create_obstacle_grid(obstacle_points, grid_shape):
