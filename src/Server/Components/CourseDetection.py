@@ -119,7 +119,7 @@ def giveMeCourseFramePoints(img):
         return None
 
 
-def giveMeGoalPoints(frame):
+def giveMeGoalPoints(frame, shift_parameter):
     points = giveMeCourseFramePoints(frame)
     if points is not None:
         top_left = points[0]
@@ -146,9 +146,26 @@ def giveMeGoalPoints(frame):
             (1 - tb) * bottom_left[1] + tb * top_left[1]
         )
 
-        return small_goal_center_point, big_goal_center_point
+
+        a = (small_goal_center_point[1]-big_goal_center_point[1])/(small_goal_center_point[0]-big_goal_center_point[0])
+
+        b = small_goal_center_point[1]-a*small_goal_center_point[0]
+
+        small_goal_shiftedX = small_goal_center_point[0]-shift_parameter
+
+        big_goal_shiftedX = big_goal_center_point[0]-shift_parameter
+
+        small_goal_shiftedY = a*small_goal_shiftedX+b
+
+        big_goal_shiftedY = a*big_goal_shiftedX+b
+
+        small_goal_shifted = (small_goal_shiftedX, small_goal_shiftedY)
+
+        big_goal_shifted = (big_goal_shiftedX, big_goal_shiftedY)
+
+        return small_goal_center_point, small_goal_shifted, big_goal_center_point, big_goal_shifted
     else:
-        return None, None
+        return None, None, None, None
 
 
 def detect_color(img, color_range):
