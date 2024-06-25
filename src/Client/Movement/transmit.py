@@ -2,7 +2,7 @@
 import socket
 import json
 from pybricks.ev3devices import Motor, GyroSensor, TouchSensor, ColorSensor
-from pybricks.parameters import Port, Direction, Stop
+from pybricks.parameters import Port, Direction, Stop, Color
 from pybricks.robotics import DriveBase
 from pybricks.tools import wait
 from pybricks.hubs import EV3Brick
@@ -10,7 +10,7 @@ import math
 import time
 import threading
 
-HOST = '192.168.197.108'  # Server IP address
+HOST = '172.20.10.3'  # Server IP address
 PORT = 12345  # Server port for receiving vectors
 REQUEST_PORT = 12346  # Server port for sending confirmation
 AXLE_TRACK = 180  # Distance between the wheels
@@ -91,6 +91,7 @@ def calculate_distance_and_heading(current_position, target_position):
     return distance, heading
 
 def turn_by_angle(communicator, initial_heading, turn_angle, gear_ratio, wheel_diameter, track_width, speed=150):
+    global color_sensor_triggered
     current_heading = initial_heading
     remaining_angle = turn_angle
     increment_angle = 20
@@ -151,6 +152,15 @@ def adjust_motor_speed(left_motor_speed, right_motor_speed, heading_error):
         print("Right motor speed + : {}".format(right_motor_speed))
     return left_motor_speed, right_motor_speed
 
+def adjust_motor_speed_for_backup(left_motor_speed, right_motor_speed, heading_error, correction_factor=1):
+    if heading_error > 0:  # Robot is veering left, slow down left motor or speed up right motor
+        left_motor_speed -= min(heading_error * correction_factor, left_motor_speed - 10)  # Ensure speed doesn't go below a threshold
+        right_motor_speed += min(heading_error * correction_factor, 1000 - right_motor_speed)  # Ensure speed doesn't exceed max
+    elif heading_error < 0:  # Robot is veering right, do the opposite
+        left_motor_speed += min(abs(heading_error) * correction_factor, 1000 - left_motor_speed)
+        right_motor_speed -= min(abs(heading_error) * correction_factor, right_motor_speed - 10)
+    return left_motor_speed, right_motor_speed
+
 def drive_distance_in_intervals(communicator, initial_position, current_heading, target_position, gear_ratio, wheel_diameter, track_width, interval_distance=250, speed=200):
     print("Starting iterval drive...")
     remaining_distance = get_distance(initial_position, target_position)
@@ -206,12 +216,13 @@ def is_target_behind(robot_position, robot_heading, target_position):
         return True, heading_diff
     return False, heading_diff
 
-def should_back_up(current_position, target_position, current_heading):
+def should_back_up(communicator, current_position, target_position, current_heading):
+    print("Checking if backup is needed...")
     target_behind, heading_diff = is_target_behind(current_position, current_heading, target_position)
     distance_to_target = get_distance(current_position, target_position)
 
     if target_behind:
-        print(f"Target is behind the robot. Heading difference: {heading_diff}")
+        print("Target is behind the robot. Heading difference: {}".format(heading_diff))
 
         if distance_to_target < 100:
             return False, heading_diff
@@ -231,22 +242,24 @@ def should_back_up(current_position, target_position, current_heading):
 def backup_to_point(communicator, current_position, current_heading, backup_point, gear_ratio, wheel_diameter, track_width, speed=100):
     distance_to_backup_point, heading_to_backup_point = calculate_distance_and_heading(current_position, backup_point)
     backup_heading = normalize_angle(heading_to_backup_point + 180)  # Reverse the heading for backing up
+    global color_sensor_triggered
 
-    # Turn to face the backup direction
-    turn_angle = normalize_angle(backup_heading - current_heading)
-
-    while distance_to_backup_point > 50:  # Stop when within 10 units of the backup point
+    while distance_to_backup_point > 10:  # Stop when within 10 units of the backup point
+        # Calculate the distance to drive in this interval
         distance_to_drive = min(100, distance_to_backup_point)  # Adjust interval as needed
         wheel_circumference = math.pi * wheel_diameter
         rotations = distance_to_drive / wheel_circumference
         degrees = rotations * 360 / gear_ratio
 
-        # Move backward
-        left_motor.run_angle(-speed, degrees, then=Stop.HOLD, wait=False)
-        right_motor.run_angle(-speed, degrees, then=Stop.HOLD, wait=True)
+        heading_error = normalize_angle(backup_heading - current_heading)
+        adjusted_left_speed, adjusted_right_speed = adjust_motor_speed_for_backup(speed, speed, heading_error)
 
-        # Request updated position
-        communicator.send_confirmation("update_position_and_heading")
+        print("Driving backward with adjusted speeds: left={}, right={}, for distance: {}".format(adjusted_left_speed, adjusted_right_speed, degrees))
+        left_motor.run_angle(-adjusted_left_speed, degrees, then=Stop.HOLD, wait=False)
+        right_motor.run_angle(-adjusted_right_speed, degrees, then=Stop.HOLD, wait=True)
+
+        # Request updated position and heading
+        communicator.send_request("update_pos_and_heading")
         data = communicator.receive_position_and_heading()
         current_position = data['current_position']
         current_heading = data['current_heading']
@@ -254,10 +267,6 @@ def backup_to_point(communicator, current_position, current_heading, backup_poin
         # Recalculate the distance to the backup point
         distance_to_backup_point, heading_to_backup_point = calculate_distance_and_heading(current_position, backup_point)
         backup_heading = normalize_angle(heading_to_backup_point + 180)  # Reverse the heading for backing up
-
-        turn_angle = normalize_angle(backup_heading - current_heading)
-        if abs(turn_angle) > 3:  # Only adjust if the turn angle is significant
-            turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, wheel_diameter, track_width)
 
         print("Current position: {}, Remaining distance: {}, Current heading: {}".format(current_position, distance_to_backup_point, current_heading))
 
@@ -283,23 +292,25 @@ gear_ratio = teeth_driven_gear / teeth_driving_gear
 robot = DriveBase(left_motor, right_motor, WHEEL_DIAMETER, AXLE_TRACK)
 feed = Motor(Port.C)
 color = ColorSensor(Port.S1)
-gyro = GyroSensor(Port.S2)
 
 feed_motor_running = False
-
+color_sensor_triggered = False
+running = True
 def color_sensor_thread():
-    global feed_motor_running
-    while True:
-            reflection = color.reflection()
-            #print("Color sensor reflection value: {}".format(reflection))
-            if reflection > 1 and not feed_motor_running:
-                print("Color sensor detected reflection >= 1")
-                feed_motor_running = True
-                feed.run_time(speed=4000, time=5000, then=Stop.COAST, wait=False)
-                left_motor.run_time(100, 2000, then=Stop.HOLD, wait=False)
-                right_motor.run_time(100, 2000, then=Stop.HOLD, wait=True)
-                feed_motor_running = False
-            time.sleep(0.1)
+    global feed_motor_running, color_sensor_triggered, running
+    while running:
+        reflection = color.reflection()
+        color_seen = color.color()
+        print("Color: {}, Reflection: {}".format(color_seen, reflection))
+        if reflection > 1 and not color_seen == Color.RED and not feed_motor_running:
+            color_sensor_triggered = True
+            feed_motor_running = True
+            feed.run_time(speed=4000, time=5000, then=Stop.COAST, wait=False)
+            left_motor.run_time(100, 1000, then=Stop.HOLD, wait=False)
+            right_motor.run_time(100, 10000, then=Stop.HOLD, wait=True)
+            feed_motor_running = False
+        time.sleep(0.1)
+
 
 communicator = RobotCommunicator(HOST, PORT, REQUEST_PORT)
 communicator.connect_to_server()
@@ -312,23 +323,30 @@ color_thread.start()
 
 while True:
     data = communicator.receive_data()
+    print("Received data: {}".format(data))
+
+    if 'current_position' not in data or 'current_heading' not in data or 'target_position' not in data:
+        print("Missing data in received data.")
+        continue
+
     current_position = data['current_position']
     current_heading = data['current_heading']
     target_position = data['target_position']
-    waypoints = data['waypoints_count']
-    last_trip = data['last_trip']
-    print("Received data: {}".format(data))
+    waypoints = data.get('waypoints_count', 0)
+    old_target = data.get('old_target', None)
+    shifted = data.get('shifted', False)
+    last_trip = data.get('last_trip', False)
 
+    backup_needed, backup_info = should_back_up(communicator, current_position, target_position, current_heading)
+    if backup_needed:
+        print("Backing up...")
+        backup_point = backup_info
+        current_position, current_heading = backup_to_point(communicator, current_position, current_heading, backup_point, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+    
     target_heading = round(calculate_target_heading(current_position, target_position))
     print("Target heading: {}".format(target_heading))
     turn_angle = round(normalize_angle(target_heading - current_heading))
     print("Turn angle: {}".format(turn_angle))
-
-    backup_needed, backup_info = should_back_up(current_position, target_position, current_heading, communicator)
-    if backup_needed:
-        print("Backing up...")
-        backup_point = backup_info
-
 
     current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
     print("Turned to target heading")
@@ -336,10 +354,31 @@ while True:
     drive_distance_in_intervals(communicator, current_position, current_heading, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
 
     print("Waypoint number: {}".format(waypoints))
+    if color_sensor_triggered:
+        communicator.send_request("reached_ball_position")
+        ev3.speaker.beep()
+        color_sensor_triggered = False
+        continue
+    if shifted and waypoints == 1:
+        target_heading = round(calculate_target_heading(current_position, old_target))
+        print("Target heading: {}".format(target_heading))
+        turn_angle = round(normalize_angle(target_heading - current_heading))
+        print("Turn angle: {}".format(turn_angle))
+        current_heading = turn_by_angle(communicator, current_heading, turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+        print("Turned to target heading")
+        print("Init Driving to target position")
+        drive_distance_in_intervals(communicator, current_position, current_heading, old_target, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+        continue
     if waypoints > 1:
         communicator.send_request("reached_waypoint")
         continue
     if last_trip:
+        goal_heading = 0.0
+        final_turn_angle = round(normalize_angle(goal_heading - current_heading))
+        current_heading = turn_by_angle(communicator, current_heading, final_turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+        true_position = (target_position[0] + 50, target_position[1])
+        drive_distance_in_intervals(communicator, current_position, current_heading, true_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+        running = False
         feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
         break
     else:

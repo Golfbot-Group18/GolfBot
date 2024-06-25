@@ -122,6 +122,25 @@ def ramer_douglas_peucker(points, epsilon):
         return [line_start, line_end]
 
 
+def is_ball_near_edge(ball_position, grid_shape, edge_threshold):
+    x, y = ball_position
+    rows, cols = grid_shape
+
+    if x < edge_threshold or x > cols - edge_threshold or y < edge_threshold or y > rows - edge_threshold:
+        return True
+    return False
+
+def is_ball_in_corner(ball_position, grid_shape, corner_threshold):
+    x, y = ball_position
+    rows, cols = grid_shape
+
+    if (x < corner_threshold and y < corner_threshold) or \
+       (x < corner_threshold and y > rows - corner_threshold) or \
+       (x > cols - corner_threshold and y < corner_threshold) or \
+       (x > cols - corner_threshold and y > rows - corner_threshold):
+        return True
+    return False
+
 '''Also not currently used, but this function should be used to figure out if a ball is in proximity of an obstacle'''
 def is_goal_in_proximity(point, clearance_grid, threshold):
     x, y = point
