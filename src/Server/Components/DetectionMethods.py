@@ -80,3 +80,69 @@ def DetectColor(frame, lower, upper):
     else:
         # print("No green area found in the image.")
         return None
+
+
+def DetectCrossFromMask(mask):
+    # Find contours using the RETR_TREE mode
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Initialize a list to hold the contours of the specified hierarchy level
+    specific_hierarchy_contours = []
+
+    # Traverse the hierarchy to find contours at the specified level
+    for i in range(len(contours)):
+        current_level = 0
+        idx = i
+        while hierarchy[0][idx][3] != -1:
+            idx = hierarchy[0][idx][3]
+            current_level += 1
+
+        # If the current contour is at the specified hierarchy level, add it to the list
+        if current_level == 2:
+            specific_hierarchy_contours.append(contours[i])
+            largest_contour = max(specific_hierarchy_contours, key=cv2.contourArea)
+
+    return largest_contour
+
+
+'''
+    # Filter contours by area (you can adjust the threshold)
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+
+    if filtered_contours:
+        # Get the largest contour
+        largest_contour = max(filtered_contours, key=cv2.contourArea)
+
+        # x, y, w, h = cv2.boundingRect(largest_contour)
+        return largest_contour
+    else:
+        # print("No green area found in the image.")
+        return None
+'''
+
+
+def AccidentalInnerFrame(mask):
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Extract the second hierarchy contours
+    second_hierarchy_contours = []
+    for i in range(len(contours)):
+        # Check if the current contour is part of the second hierarchy
+        if hierarchy[0][i][3] != -1:
+            second_hierarchy_contours.append(contours[i])
+            largest_contour = max(second_hierarchy_contours, key=cv2.contourArea)
+
+    return largest_contour
+
+    # Filter contours by area (you can adjust the threshold)
+    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
+
+    if filtered_contours:
+        # Get the largest contour
+        largest_contour = max(filtered_contours, key=cv2.contourArea)
+
+        # x, y, w, h = cv2.boundingRect(largest_contour)
+        return largest_contour
+    else:
+        # print("No green area found in the image.")
+        return None

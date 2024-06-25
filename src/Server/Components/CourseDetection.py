@@ -7,6 +7,7 @@ from src.Server.Components.BallDetection import DetectOrangeBall
 from src.Server.Components.DetectionMethods import *
 from sklearn.cluster import DBSCAN
 
+from src.Server.Components.EggDetection import DetectEgg
 from src.Server.Components.MainImageAnalysis import giveMeFrames
 from src.Server.Components.RobotDetection import euclidean_distance
 
@@ -51,6 +52,46 @@ def giveMeBinaryBitch(img):
 
 def PatricksCoordinates(frame):
     return None
+
+
+def giveMeObstacleCoordinates(frame):
+    cross = np.array(giveMeCross(frame))
+    egg = np.array(DetectEgg(frame))
+    obstacle_coordinates = []
+
+    if egg is not None:
+        obstacle_coordinates.append(egg)
+
+    if cross is not None:
+        obstacle_coordinates.append(cross)
+
+    if obstacle_coordinates == 0:
+        return None
+
+    return obstacle_coordinates
+
+
+def giveMeCross(img):
+    binary = giveMeBinaryBitch(img)
+    contour = DetectCrossFromMask(binary)
+
+    if contour is not None:
+        rect = cv2.minAreaRect(contour)
+        if rect is not None:
+            # Get the box points and convert them to integers
+            box = cv2.boxPoints(rect)
+            box = np.int32(box)
+
+            # Draw the bounding box
+            cv2.drawContours(img, [box], 0, (0, 255, 0), 2)
+            cv2.imshow('Result with cross', img)
+            return box
+        else:
+            print('No cross')
+            return None
+    else:
+        print('No contour')
+        return None
 
 
 def giveMeCourseFramePoints(img):

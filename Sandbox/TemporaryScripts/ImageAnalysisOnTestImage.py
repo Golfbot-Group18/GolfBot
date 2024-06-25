@@ -54,7 +54,18 @@ def ImageAnalysis(frame):
     eggs = DetectEgg(frame)
 
     binary = giveMeBinaryBitch(frame)
-    giveMeCourseFramePoints(frame)
+    # giveMeCourseFramePoints(frame)
+    # giveMeCross(frame)
+
+    obstacles = giveMeObstacleCoordinates(frame)
+    new_frame = np.copy(frame)
+    for contour in obstacles:
+        cv2.drawContours(new_frame, [contour], -1, (255, 0, 0), 2)
+
+    cv2.imshow('obstacles', new_frame)
+
+
+
 
     small_goal_center_point, big_goal_center_point = giveMeGoalPoints(frame)
 
@@ -72,7 +83,6 @@ def ImageAnalysis(frame):
         cv2.putText(frame, "big goal", (sx, sy), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     backend = cv2.getBuildInformation()
-    print(backend)
 
 
 
