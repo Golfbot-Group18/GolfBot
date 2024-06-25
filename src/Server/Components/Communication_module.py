@@ -73,9 +73,10 @@ class RobotCommunicator:
         print(f"Received confirmation from robot: {request}")
         return request
     
-    def send_data(self, current_position, current_heading, target_position, vector_count, shifted=False, old_target=None, last_trip=False):
+    def send_data(self, current_position, current_heading, target_position, vector_count, shifted=False, old_target=None, last_trip=False, true_goal_position=None):
         current_position_list = list(current_position)
         target_position_list = list(target_position)
+        true_goal_position= list(true_goal_position)
         data = {
             "current_position": current_position_list,
             "current_heading": float(current_heading),
@@ -84,6 +85,7 @@ class RobotCommunicator:
             "last_trip": last_trip,
             "shifted": shifted,
             "old_target": old_target,
+            "true_goal_position": true_goal_position
             }
         
         message = json.dumps(data)

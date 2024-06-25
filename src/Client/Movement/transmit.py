@@ -338,6 +338,7 @@ while True:
     old_target = data.get('old_target', None)
     shifted = data.get('shifted', False)
     last_trip = data.get('last_trip', False)
+    true_goal_position = data.get('true_goal_position', None)
 
     while not color_sensor_triggered:
         backup_needed, backup_info = should_back_up(communicator, current_position, target_position, current_heading)
@@ -371,11 +372,18 @@ while True:
             communicator.send_request("reached_waypoint")
             continue
         if last_trip:
-            goal_heading = 0.0
+            goal_heading = round(calculate_target_heading(current_position, target_position))
             final_turn_angle = round(normalize_angle(goal_heading - current_heading))
             current_heading = turn_by_angle(communicator, current_heading, final_turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
-            true_position = (target_position[0] + 50, target_position[1])
-            drive_distance_in_intervals(communicator, current_position, current_heading, true_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            drive_distance_in_intervals(communicator, current_position, current_heading, target_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            communicator.send_request("update_pos_and_heading")
+            data = communicator.receive_position_and_heading()
+            current_position = data['current_position']
+            current_heading = data['current_heading']
+            true_heading = round(calculate_distance_and_heading(current_position, true_goal_position))
+            final_turn_angle = round(normalize_angle(true_heading - current_heading))
+            current_heading = turn_by_angle(communicator, current_heading, final_turn_angle, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
+            drive_distance_in_intervals(communicator, current_position, current_heading, true_goal_position, gear_ratio, WHEEL_DIAMETER, AXLE_TRACK)
             running = False
             feed.run_time(-4000, 10000, then=Stop.HOLD, wait=False)
             break

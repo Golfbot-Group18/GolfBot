@@ -34,7 +34,7 @@ def look_for_obstacles(frame):
 def initialize_course_processing():
     frame = giveMeFrames()
     standard_grid, clearance_grid, max_distance = look_for_obstacles(frame)
-    small_goal_coord, big_goal_coord = giveMeGoalPoints(frame)
+    small_goal_coord, shifted_small_coord, big_goal_coord, shifted_big_coord= giveMeGoalPoints(frame)
     
     if small_goal_coord is None or big_goal_coord is None:
         print("No goal points detected.")
@@ -42,7 +42,7 @@ def initialize_course_processing():
         small_goal_coord, big_goal_coord = giveMeGoalPoints(frame)
         return None, None
     corner_points = giveMeCourseFramePoints(frame)
-    return standard_grid, clearance_grid, max_distance, small_goal_coord, big_goal_coord, corner_points
+    return standard_grid, clearance_grid, max_distance, small_goal_coord, big_goal_coord, corner_points, shifted_small_coord, shifted_big_coord
     
 
 def getRobot():
@@ -157,6 +157,9 @@ def find_closest_ball_with_path(robot_base, balls, clearance_grid, standard_grid
     bottom_right = points[2]
     bottom_left = points[3]
 
+    safe_zone_center = (960, 540)
+    safe_zone_radius = 100
+
     safe_points = get_safe_points(clearance_grid, [top_left, top_right, bottom_right, bottom_left], min_clearance)
 
     balls.sort(key=lambda x: np.linalg.norm(np.array(x) - np.array(robot_base)))
@@ -166,6 +169,9 @@ def find_closest_ball_with_path(robot_base, balls, clearance_grid, standard_grid
         in_corner = any(np.linalg.norm(np.array(closest_ball) - np.array(corner)) < 70 for corner in [top_left, top_right, bottom_right, bottom_left])
         if in_corner:
             print(f"Skipping ball in the corner at position: {closest_ball}")
+            continue
+        if np.linalg.norm(np.array(closest_ball) - np.array(safe_zone_center)) < safe_zone_radius:
+            print(f"Skipping ball near the center at position: {closest_ball}")
             continue
         
         # Direct path check
@@ -276,7 +282,7 @@ def find_backup_point(clearance_grid, robot_position, robot_heading, max_backup_
 
 def main():
     print("Starting server... processing course")
-    standard_grid, clearance_grid, max_distance, small_goal_coord, large_goal_coord, corner_points = initialize_course_processing()
+    standard_grid, clearance_grid, max_distance, small_goal_coord, large_goal_coord, corner_points, shifted_small_goal, shifted_large_goal = initialize_course_processing()
     safe_points = get_safe_points(clearance_grid, corner_points)
     print(safe_points)
     grid_img = visualize_grid(standard_grid, interval=10)
@@ -346,9 +352,8 @@ def main():
                 cv2.circle(grid_img, center, 20, (0, 0, 255), 50)
         else:
             print("No path found to any ball.")
-            goal = (int(small_goal_coord[0]), int(small_goal_coord[1])) #in (x,y)
-            shifted_goal = (goal[0] - 100, goal[1])
-            path, closest_ball = find_closest_ball_with_path(base, balls, clearance_grid, standard_grid, MIN_CLEARANCE, goal=shifted_goal, points=corner_points)
+            goal = shifted_large_goal
+            path, closest_ball = find_closest_ball_with_path(base, balls, clearance_grid, standard_grid, MIN_CLEARANCE, goal=goal, points=corner_points)
             simplified_path = simplifyPath(path, 100)
             last_trip = True
         
@@ -361,7 +366,7 @@ def main():
             iteration = 1
             print("Sending data to robot...")
             print(f"Current robot position: {robot_base}, Current robot heading: {robot_heading}, Target position: {simplified_path[iteration]}, Number of waypoints: {len(simplified_path) - 1}, Last trip: {last_trip}")
-            communicator.send_data(robot_base, robot_heading, simplified_path[iteration], len(simplified_path) - iteration, last_trip=last_trip)
+            communicator.send_data(robot_base, robot_heading, simplified_path[iteration], len(simplified_path) - iteration, last_trip=last_trip, true_goal_position=shifted_large_goal)
             print("Data sent to robot.")
             while True:
                 print("Waiting for request...")
