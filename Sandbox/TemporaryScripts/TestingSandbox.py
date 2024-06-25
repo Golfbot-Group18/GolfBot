@@ -9,7 +9,7 @@ from src.Server.Components.CourseDetection import *
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Provide the correct full path to the image file
-image_path = os.path.join(script_dir, '..', 'Images', 'Refiner2.png')
+image_path = os.path.join(script_dir, '..', 'Images', 'RobotTriangle8.png')
 
 if __name__ == "__main__":
 

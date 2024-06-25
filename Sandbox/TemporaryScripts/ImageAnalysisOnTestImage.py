@@ -58,11 +58,13 @@ def ImageAnalysis(frame):
     # giveMeCross(frame)
 
     obstacles = giveMeObstacleCoordinates(frame)
-    new_frame = np.copy(frame)
-    for contour in obstacles:
-        cv2.drawContours(new_frame, [contour], -1, (255, 0, 0), 2)
+    giveMeCross(frame)
+    #new_frame = np.copy(frame)
+    #if obstacles is not None:
+    ##    for contour in obstacles:
+     #       cv2.drawContours(new_frame, [contour], -1, (255, 0, 0), 2)
 
-    cv2.imshow('obstacles', new_frame)
+   # cv2.imshow('obstacles', new_frame)
 
 
 

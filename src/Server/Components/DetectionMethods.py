@@ -88,6 +88,7 @@ def DetectCrossFromMask(mask):
 
     # Initialize a list to hold the contours of the specified hierarchy level
     specific_hierarchy_contours = []
+    largest_contour = []
 
     # Traverse the hierarchy to find contours at the specified level
     for i in range(len(contours)):

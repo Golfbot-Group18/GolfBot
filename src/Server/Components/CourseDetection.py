@@ -76,8 +76,8 @@ def giveMeCross(img):
     contour = DetectCrossFromMask(binary)
 
     if contour is not None:
-        rect = cv2.minAreaRect(contour)
-        if rect is not None:
+        try:
+            rect = cv2.minAreaRect(contour)
             # Get the box points and convert them to integers
             box = cv2.boxPoints(rect)
             box = np.int32(box)
@@ -86,8 +86,8 @@ def giveMeCross(img):
             cv2.drawContours(img, [box], 0, (0, 255, 0), 2)
             cv2.imshow('Result with cross', img)
             return box
-        else:
-            print('No cross')
+        except Exception as e:
+            print(f"Exception encountered: {e} - Retry detection")
             return None
     else:
         print('No contour')
