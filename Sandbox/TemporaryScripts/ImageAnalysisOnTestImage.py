@@ -69,7 +69,7 @@ def ImageAnalysis(frame):
 
 
 
-    small_goal_center_point, big_goal_center_point = giveMeGoalPoints(frame)
+    big_goal_center_point, small_goal_center_point = giveMeGoalPoints(frame)
 
     if small_goal_center_point is not None:
         print(small_goal_center_point)
@@ -97,10 +97,10 @@ def ImageAnalysis(frame):
     # box = np.int32(box)
     # cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
 
-    # epsilon = 0.02 * cv2.arcLength(green_area, True)
-    # approx = cv2.approxPolyDP(green_area, epsilon, True)
-    # print(approx)
-    # cv2.drawContours(frame, [approx], 0, (0, 0, 255), 2)
+    epsilon = 0.02 * cv2.arcLength(green_area, True)
+    approx = cv2.approxPolyDP(green_area, epsilon, True)
+    print(approx)
+    cv2.drawContours(frame, [approx], 0, (0, 0, 255), 2)
 
     if green_area is not None:
         robot_width = CalculateRobotWidth(green_area)
