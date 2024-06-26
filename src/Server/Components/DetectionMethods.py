@@ -78,3 +78,26 @@ def DetectColor(frame, lower, upper):
     else:
         # print("No green area found in the image.")
         return None
+
+
+def DetectCrossFromMask(mask):
+    # Find contours using the RETR_TREE mode
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Initialize a list to hold the contours of the specified hierarchy level
+    specific_hierarchy_contours = []
+    largest_contour = None
+    # Traverse the hierarchy to find contours at the specified level
+    for i in range(len(contours)):
+        current_level = 0
+        idx = i
+        while hierarchy[0][idx][3] != -1:
+            idx = hierarchy[0][idx][3]
+            current_level += 1
+
+        # If the current contour is at the specified hierarchy level, add it to the list
+        if current_level == 2:
+            specific_hierarchy_contours.append(contours[i])
+            largest_contour = max(specific_hierarchy_contours, key=cv2.contourArea)
+
+    return largest_contour

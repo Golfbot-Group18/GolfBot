@@ -4,6 +4,8 @@ import numpy as np
 from scipy.spatial import KDTree
 from Components.BallDetection import DetectOrangeBall
 from sklearn.cluster import DBSCAN
+from Components.DetectionMethods import DetectCrossFromMask
+from Components.EggDetection import DetectEgg
 
 
 # Får den aktuelle mappe, hvor vores script ligger og den korrekte sti til billede filerne
@@ -146,18 +148,18 @@ def giveMeGoalPoints(frame, shift_parameter):
             (1 - tb) * bottom_left[1] + tb * top_left[1]
         )
 
+        a = (small_goal_center_point[1] - big_goal_center_point[1]) / (
+                    small_goal_center_point[0] - big_goal_center_point[0])
 
-        a = (small_goal_center_point[1]-big_goal_center_point[1])/(small_goal_center_point[0]-big_goal_center_point[0])
+        b = small_goal_center_point[1] - a * small_goal_center_point[0]
 
-        b = small_goal_center_point[1]-a*small_goal_center_point[0]
+        small_goal_shiftedX = small_goal_center_point[0] - shift_parameter
 
-        small_goal_shiftedX = small_goal_center_point[0]-shift_parameter
+        big_goal_shiftedX = big_goal_center_point[0] - shift_parameter
 
-        big_goal_shiftedX = big_goal_center_point[0]-shift_parameter
+        small_goal_shiftedY = a * small_goal_shiftedX + b
 
-        small_goal_shiftedY = a*small_goal_shiftedX+b
-
-        big_goal_shiftedY = a*big_goal_shiftedX+b
+        big_goal_shiftedY = a * big_goal_shiftedX + b
 
         small_goal_shifted = (small_goal_shiftedX, small_goal_shiftedY)
 
@@ -167,6 +169,45 @@ def giveMeGoalPoints(frame, shift_parameter):
     else:
         return None, None, None, None
 
+
+def giveMeObstacleCoordinates(frame):
+    cross = np.array(giveMeCross(frame))
+    egg = np.array(DetectEgg(frame))
+    obstacle_coordinates = []
+
+    if egg is not None:
+        obstacle_coordinates.append(egg)
+
+    if cross is not None:
+        obstacle_coordinates.append(cross)
+
+    if obstacle_coordinates == 0:
+        return None
+
+    return obstacle_coordinates
+
+
+def giveMeCross(img):
+    binary = giveMeBinaryBitch(img)
+    contour = DetectCrossFromMask(binary)
+
+    if contour is not None:
+        try:
+            rect = cv2.minAreaRect(contour)
+            # Get the box points and convert them to integers
+            box = cv2.boxPoints(rect)
+            box = np.int32(box)
+
+            # Draw the bounding box
+            cv2.drawContours(img, [box], 0, (0, 255, 0), 2)
+            cv2.imshow('Result with cross', img)
+            return box
+        except Exception as e:
+            print(f"Exception encountered: {e} - Retry detection")
+            return None
+    else:
+        print('No contour')
+        return None
 
 def detect_color(img, color_range):
     mask = cv2.inRange(img, color_range[0], color_range[1])
