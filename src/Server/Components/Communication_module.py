@@ -102,10 +102,3 @@ class RobotCommunicator:
         if self.request_connection:
             self.request_connection.close()
         print("Connection closed")
-
-
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.float32):
-            return float(obj)
-        return super(MyEncoder, self).default(obj)

@@ -289,7 +289,6 @@ teeth_driving_gear = 24
 teeth_driven_gear = 16
 gear_ratio = teeth_driven_gear / teeth_driving_gear
 
-robot = DriveBase(left_motor, right_motor, WHEEL_DIAMETER, AXLE_TRACK)
 feed = Motor(Port.C)
 color = ColorSensor(Port.S1)
 
@@ -301,7 +300,7 @@ def color_sensor_thread(communicator):
     while running:
         reflection = color.reflection()
         color_seen = color.color()
-        print("Color: {}, Reflection: {}".format(color_seen, reflection))
+        #print("Color: {}, Reflection: {}".format(color_seen, reflection))
         if reflection > 1 and not color_seen == Color.RED and not feed_motor_running:
             color_sensor_triggered = True
             feed_motor_running = True
@@ -309,7 +308,6 @@ def color_sensor_thread(communicator):
             left_motor.run_time(100, 1000, then=Stop.HOLD, wait=False)
             right_motor.run_time(100, 10000, then=Stop.HOLD, wait=True)
             feed_motor_running = False
-            communicator.send_request("reached_ball_position")
             ev3.speaker.beep()
         time.sleep(0.1)
 
@@ -390,5 +388,6 @@ while True:
         else:
             communicator.send_request("reached_ball_position")
             ev3.speaker.beep()
-            continue
-
+            break
+    communicator.send_request("reached_ball_position")
+    continue
